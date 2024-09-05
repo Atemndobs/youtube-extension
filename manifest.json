@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Player Extension",
+  "version": "1.0",
+  "description": "Play YouTube videos directly from a URL.",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://viewer.atemkeng.de/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "YouTube Player"
+  },
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://viewer.atemkeng.de/"
+  }
+}
