@@ -19,11 +19,9 @@ function initializePopup() {
 }
 
 
-
-
 // Function to send the YouTube URL to the provided API endpoint
 function sendUrlToApi(url) {
-    fetch('https://viewer.atemkeng.de/api/add-to-playlist', {
+    fetch('https://viewer.atemkeng.de/api/playlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url })  // Sending the YouTube URL as the body
