@@ -20,11 +20,24 @@ function initializePopup() {
 
 
 // Function to send the YouTube URL to the provided API endpoint
+// Function to generate or retrieve a deviceId
+function getDeviceId() {
+    let deviceId = localStorage.getItem('deviceId');
+    if (!deviceId) {
+        deviceId = 'device-' + Math.random().toString(36).substr(2, 9); // Generate a simple random deviceId
+        localStorage.setItem('deviceId', deviceId);
+    }
+    return deviceId;
+}
+
+// Function to send the YouTube URL to the provided API endpoint with deviceId
 function sendUrlToApi(url) {
+    const deviceId = getDeviceId(); // Retrieve or generate the deviceId
+
     fetch('https://viewer.atemkeng.de/api/playlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url })  // Sending the YouTube URL as the body
+        body: JSON.stringify({ url: url, deviceId: deviceId })  // Sending the YouTube URL and deviceId as the body
     })
     .then(response => response.json())
     .then(data => {
@@ -38,6 +51,7 @@ function sendUrlToApi(url) {
         window.close();
     });
 }
+
 
 // Event listener for the "Send Video" button
 document.getElementById('playButton').addEventListener('click', function () {
