@@ -18,6 +18,9 @@ function initializePopup() {
     });
 }
 
+
+
+
 // Function to send the YouTube URL to the provided API endpoint
 function sendUrlToApi(url) {
     fetch('https://viewer.atemkeng.de/api/add-to-playlist', {
