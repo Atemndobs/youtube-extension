@@ -17,38 +17,6 @@ function initializePopup() {
     });
 }
 
-// // Function to retrieve deviceId from the web app
-// function fetchDeviceId(callback) {
-//     getDeviceId(deviceId => {
-//         if (!deviceId) {
-//             console.error('No device ID available.');
-//             callback(null);
-//             return;
-//         }
-
-//         fetch('https://viewer.atemkeng.de/api/device-id', {
-//             method: 'GET',
-//             headers: {
-//                 'Content-Type': 'application/json',
-//                 'device-id': deviceId  // Use the device ID from storage
-//             }
-//         })
-//         .then(response => response.json())
-//         .then(data => {
-//             if (data.deviceId) {
-//                 callback(data.deviceId);
-//             } else {
-//                 console.error('No device ID retrieved from server.');
-//                 callback(null);
-//             }
-//         })
-//         .catch(error => {
-//             console.error('Error fetching device ID:', error);
-//             callback(null);
-//         });
-//     });
-// }
-
 // Function to get the deviceId (either from local storage or server)
 function getDeviceId(callback) {
     chrome.storage.local.get('deviceId', (result) => {
@@ -90,6 +58,11 @@ function sendUrlToApi(url) {
         .then(response => response.json())
         .then(data => {
             console.log('API Response:', data);  // Logging the API response
+            // Open the watchlist if a device ID is available
+            if (deviceId) {
+                const webAppUrl = `https://viewer.atemkeng.de/?deviceId=${deviceId}`;
+                window.open(webAppUrl, '_blank');
+            }
             // Close the popup after sending the URL successfully
             window.close();
         })
@@ -101,23 +74,14 @@ function sendUrlToApi(url) {
     });
 }
 
-// Event listener for the "Send Video" button
-document.getElementById('playButton').addEventListener('click', function () {
+// Event listener for the "Add to Watchlist" button
+document.getElementById('addToWatchlistButton').addEventListener('click', function () {
     const url = document.getElementById('youtubeUrl').value;
     if (url) {
         sendUrlToApi(url);  // Send the URL to the new API endpoint
     } else {
         console.error('No URL provided.');
     }
-});
-
-// Event listener for the "Watch Videos" button
-document.getElementById('watchButton').addEventListener('click', function () {
-    chrome.storage.local.get('deviceId', (result) => {
-        let deviceId = result.deviceId || generateDeviceId();
-        const webAppUrl = `https://viewer.atemkeng.de/?deviceId=${deviceId}`; // Append deviceId as query parameter
-        window.open(webAppUrl, '_blank');
-    });
 });
 
 // Initialize the popup when it's opened
