@@ -15,6 +15,13 @@ function initializePopup() {
             document.getElementById('youtubeUrl').value = url;
         }
     });
+
+    // Load the user's theme preference
+    chrome.storage.local.get('theme', (result) => {
+        const isDarkMode = result.theme === 'dark';
+        document.body.classList.toggle('dark-mode', isDarkMode);
+        updateToggleButtonIcon(isDarkMode);
+    });
 }
 
 // Function to get the deviceId (either from local storage or server)
@@ -58,12 +65,23 @@ function sendUrlToApi(url) {
         .then(response => response.json())
         .then(data => {
             console.log('API Response:', data);  // Logging the API response
-            // Open the watchlist if a device ID is available
-            if (deviceId) {
-                const webAppUrl = `https://viewer.atemkeng.de/?deviceId=${deviceId}`;
-                window.open(webAppUrl, '_blank');
+            // Show a success message if the URL was added successfully
+            if (data.success) {
+                const message = document.getElementById('successMessage');
+                const addButton = document.getElementById('addToWatchlistButton');
+                const icon = addButton.querySelector('i');
+
+                // Change button icon and text
+                icon.classList.remove('anticon-plus');
+                icon.classList.add('anticon-check');
+                addButton.textContent = 'Added to Watchlist';
+                
+                // Show success message
+                message.classList.remove('hidden');
+                setTimeout(() => {
+                    message.classList.add('hidden');
+                }, 2000);
             }
-            // Close the popup after sending the URL successfully
             window.close();
         })
         .catch(error => {
@@ -72,6 +90,19 @@ function sendUrlToApi(url) {
             window.close();
         });
     });
+}
+
+// Function to update the toggle button icon
+function updateToggleButtonIcon(isDarkMode) {
+    const toggleButton = document.getElementById('toggleModeButton');
+    const icon = toggleButton.querySelector('i');
+    if (isDarkMode) {
+        icon.classList.remove('anticon-sun');
+        icon.classList.add('anticon-moon');
+    } else {
+        icon.classList.remove('anticon-moon');
+        icon.classList.add('anticon-sun');
+    }
 }
 
 // Event listener for the "Add to Watchlist" button
@@ -84,5 +115,37 @@ document.getElementById('addToWatchlistButton').addEventListener('click', functi
     }
 });
 
-// Initialize the popup when it's opened
+// Event listener for the "View Watchlist" button
+document.getElementById('viewWatchlistButton').addEventListener('click', function () {
+    chrome.storage.local.get('deviceId', (result) => {
+        const deviceId = result.deviceId;
+        if (deviceId) {
+            const url = document.getElementById('youtubeUrl').value;
+            // check if url is a valid youtube url
+            const youtubeRegex = /^https?:\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?$/;
+            if (!youtubeRegex.test(url)) {
+                console.error('No URL provided.');
+                const webAppUrl = `https://viewer.atemkeng.de/?deviceId=${deviceId}`;
+                window.open(webAppUrl, '_blank');
+            } else {
+                sendUrlToApi(url);  // Send the URL to the new API endpoint
+                const webAppUrl = `https://viewer.atemkeng.de/?deviceId=${deviceId}`;
+                window.open(webAppUrl, '_blank');
+            }
+        } else {
+            console.error('No device ID available.');
+        }
+    });
+});
+
+// Event listener for the theme toggle button
+document.getElementById('toggleModeButton').addEventListener('click', () => {
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    const newMode = isDarkMode ? 'light' : 'dark';
+    document.body.classList.toggle('dark-mode', !isDarkMode);
+    updateToggleButtonIcon(!isDarkMode);
+    chrome.storage.local.set({ 'theme': newMode });
+});
+
+// Initialize the popup
 initializePopup();

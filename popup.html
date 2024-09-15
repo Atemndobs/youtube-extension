@@ -4,27 +4,130 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Player</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        /* Base styles */
         body {
             width: 300px;
             padding: 10px;
             font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-color: #fff; /* Light mode background */
+            color: #000; /* Light mode text color */
+            position: relative;
+        }
+        .input-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
         input[type="text"] {
-            width: 100%;
+            flex: 1;
             padding: 5px;
-            margin-bottom: 10px;
+            background-color: #f0f0f0; /* Light input background */
+            color: #000; /* Light input text color */
+            border: 1px solid #ccc; /* Light input border */
+            border-radius: 4px; /* Rounded corners */
+        }
+        input[type="text"]::placeholder {
+            color: #888; /* Light placeholder text */
+        }
+        .button-container {
+            display: flex;
+            gap: 5px; /* Space between buttons */
         }
         button {
-            width: 100%;
+            flex: 1;
             padding: 5px;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px; /* Space between icon and text */
+            background-color: #f0f0f0; /* Light button background */
+            color: #000; /* Light button text color */
+            border: 1px solid #ccc; /* Light button border */
+            border-radius: 4px; /* Rounded corners */
+        }
+        button:hover {
+            background-color: #e0e0e0; /* Slightly darker background on hover */
+        }
+
+        /* Dark mode styles */
+        .dark-mode {
+            background-color: #1b1b1b; /* Dark mode background */
+            color: #eee; /* Dark mode text color */
+        }
+        .dark-mode input[type="text"] {
+            background-color: #000; /* Dark input background */
+            color: #eee; /* Dark input text color */
+            border: 1px solid #000; /* Dark input border */
+        }
+        .dark-mode input[type="text"]::placeholder {
+            color: #888; /* Dark placeholder text */
+        }
+        .dark-mode button {
+            background-color: #555; /* Dark button background */
+            color: #eee; /* Dark button text color */
+            border: 1px solid #000; /* Dark button border */
+        }
+        .dark-mode button:hover {
+            background-color: #666; /* Slightly lighter background on hover */
+        }
+
+        /* Toggle button */
+        .toggle-mode {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: #000; /* Light mode icon color */
+        }
+        .dark-mode .toggle-mode {
+            color: #eee; /* Dark mode icon color */
+        }
+        .toggle-mode.sun {
+            color: #121211; /* Sun color */
+        }
+        .toggle-mode.moon {
+            color: #3498db; /* Moon color */
+        }
+
+        /* Notification message */
+        #successMessage {
+            display: none;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #4caf50; /* Green background */
+            color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+        .dark-mode #successMessage {
+            background-color: #45a049; /* Darker green background for dark mode */
         }
     </style>
 </head>
 <body>
-    <input id="youtubeUrl" type="text" placeholder="Enter YouTube URL">
-    <button id="addToWatchlistButton">Add to Watchlist</button>
+    <div class="input-container">
+        <input id="youtubeUrl" type="text" placeholder="Enter YouTube URL">
+        <button class="toggle-mode" id="toggleModeButton">
+            <i class="fas fa-sun"></i>
+        </button>
+    </div>
+    <div class="button-container">
+        <button id="addToWatchlistButton">
+            <i class="icon fas fa-plus"></i>
+            Add to Watchlist
+        </button>
+        <button id="viewWatchlistButton">
+            <i class="icon fas fa-eye"></i>
+            View Watchlist
+        </button>
+    </div>
+    <div id="successMessage">Added to Watchlist</div>
 
     <script src="popup.js"></script>
 </body>
