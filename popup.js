@@ -15,39 +15,14 @@ function initializePopup() {
             document.getElementById('youtubeUrl').value = url;
         }
     });
+
+    // Load the user's theme preference
+    chrome.storage.local.get('theme', (result) => {
+        const isDarkMode = result.theme === 'dark';
+        document.body.classList.toggle('dark-mode', isDarkMode);
+        updateToggleButtonIcon(isDarkMode);
+    });
 }
-
-// // Function to retrieve deviceId from the web app
-// function fetchDeviceId(callback) {
-//     getDeviceId(deviceId => {
-//         if (!deviceId) {
-//             console.error('No device ID available.');
-//             callback(null);
-//             return;
-//         }
-
-//         fetch('https://viewer.atemkeng.de/api/device-id', {
-//             method: 'GET',
-//             headers: {
-//                 'Content-Type': 'application/json',
-//                 'device-id': deviceId  // Use the device ID from storage
-//             }
-//         })
-//         .then(response => response.json())
-//         .then(data => {
-//             if (data.deviceId) {
-//                 callback(data.deviceId);
-//             } else {
-//                 console.error('No device ID retrieved from server.');
-//                 callback(null);
-//             }
-//         })
-//         .catch(error => {
-//             console.error('Error fetching device ID:', error);
-//             callback(null);
-//         });
-//     });
-// }
 
 // Function to get the deviceId (either from local storage or server)
 function getDeviceId(callback) {
@@ -90,7 +65,23 @@ function sendUrlToApi(url) {
         .then(response => response.json())
         .then(data => {
             console.log('API Response:', data);  // Logging the API response
-            // Close the popup after sending the URL successfully
+            // Show a success message if the URL was added successfully
+            if (data.success) {
+                const message = document.getElementById('successMessage');
+                const addButton = document.getElementById('addToWatchlistButton');
+                const icon = addButton.querySelector('i');
+
+                // Change button icon and text
+                icon.classList.remove('anticon-plus');
+                icon.classList.add('anticon-check');
+                addButton.textContent = 'Added to Watchlist';
+                
+                // Show success message
+                message.classList.remove('hidden');
+                setTimeout(() => {
+                    message.classList.add('hidden');
+                }, 2000);
+            }
             window.close();
         })
         .catch(error => {
@@ -101,8 +92,21 @@ function sendUrlToApi(url) {
     });
 }
 
-// Event listener for the "Send Video" button
-document.getElementById('playButton').addEventListener('click', function () {
+// Function to update the toggle button icon
+function updateToggleButtonIcon(isDarkMode) {
+    const toggleButton = document.getElementById('toggleModeButton');
+    const icon = toggleButton.querySelector('i');
+    if (isDarkMode) {
+        icon.classList.remove('anticon-sun');
+        icon.classList.add('anticon-moon');
+    } else {
+        icon.classList.remove('anticon-moon');
+        icon.classList.add('anticon-sun');
+    }
+}
+
+// Event listener for the "Add to Watchlist" button
+document.getElementById('addToWatchlistButton').addEventListener('click', function () {
     const url = document.getElementById('youtubeUrl').value;
     if (url) {
         sendUrlToApi(url);  // Send the URL to the new API endpoint
@@ -111,14 +115,37 @@ document.getElementById('playButton').addEventListener('click', function () {
     }
 });
 
-// Event listener for the "Watch Videos" button
-document.getElementById('watchButton').addEventListener('click', function () {
+// Event listener for the "View Watchlist" button
+document.getElementById('viewWatchlistButton').addEventListener('click', function () {
     chrome.storage.local.get('deviceId', (result) => {
-        let deviceId = result.deviceId || generateDeviceId();
-        const webAppUrl = `https://viewer.atemkeng.de/?deviceId=${deviceId}`; // Append deviceId as query parameter
-        window.open(webAppUrl, '_blank');
+        const deviceId = result.deviceId;
+        if (deviceId) {
+            const url = document.getElementById('youtubeUrl').value;
+            // check if url is a valid youtube url
+            const youtubeRegex = /^https?:\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?$/;
+            if (!youtubeRegex.test(url)) {
+                console.error('No URL provided.');
+                const webAppUrl = `https://viewer.atemkeng.de/?deviceId=${deviceId}`;
+                window.open(webAppUrl, '_blank');
+            } else {
+                sendUrlToApi(url);  // Send the URL to the new API endpoint
+                const webAppUrl = `https://viewer.atemkeng.de/?deviceId=${deviceId}`;
+                window.open(webAppUrl, '_blank');
+            }
+        } else {
+            console.error('No device ID available.');
+        }
     });
 });
 
-// Initialize the popup when it's opened
+// Event listener for the theme toggle button
+document.getElementById('toggleModeButton').addEventListener('click', () => {
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    const newMode = isDarkMode ? 'light' : 'dark';
+    document.body.classList.toggle('dark-mode', !isDarkMode);
+    updateToggleButtonIcon(!isDarkMode);
+    chrome.storage.local.set({ 'theme': newMode });
+});
+
+// Initialize the popup
 initializePopup();
