@@ -1,3 +1,46 @@
+function updateToggleButtonIcon(isDarkMode) {
+    const toggleButton = document.getElementById('toggleModeButton');
+    const icon = toggleButton.querySelector('i');
+
+    if (isDarkMode) {
+        icon.classList.remove('fa-sun');
+        icon.classList.add('fa-moon');
+    } else {
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+    }
+}
+
+function toggleTheme() {
+    const theme = document.body;
+    const isDarkMode = theme.classList.contains('dark-mode');
+
+    if (isDarkMode) {
+        updateToggleButtonIcon(false);
+        theme.classList.remove('dark-mode');
+        theme.classList.add('light-mode');
+    } else {
+        updateToggleButtonIcon(true);
+        theme.classList.remove('light-mode');
+        theme.classList.add('dark-mode');
+    }
+
+    chrome.storage.local.set({ 'theme': !isDarkMode });
+}
+
+// ...
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+    if (changeInfo.status === 'complete') {
+        const isDarkMode = document.body.classList.contains('dark-mode');
+
+        updateToggleButtonIcon(isDarkMode);
+    }
+});
+
+document.getElementById('toggleModeButton').addEventListener('click', () => {
+    toggleTheme();
+});
 // Function to get the current tab's URL
 function getCurrentTabUrl(callback) {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
