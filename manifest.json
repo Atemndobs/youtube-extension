@@ -19,9 +19,9 @@
     "default_title": "YouTube Watchlist"
   },
   "icons": {
-    "16": "icons8-video-playlist-96.png",
-    "48": "icons8-video-playlist-96.png",
-    "128": "icons8-video-playlist-96.png"
+    "16": "fav_ivon_lightmode@2x.png",
+    "48": "fav_ivon_lightmode@2x.png",
+    "128": "fav_ivon_lightmode@2x.png"
   },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://viewer.atemkeng.de/"
