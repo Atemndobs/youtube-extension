@@ -1,10 +1,9 @@
 {
   "manifest_version": 3,
   "name": "YouTube Watchlist",
-  "version": "1.0",
-  "description": "Easily create and manage a watchlist of your favorite YouTube videos. Save videos directly from a URL and view them anytime.",
+  "version": "1.0.1",
+  "description": "Easily create and manage a watchlist of your favorite YouTube videos. Save videos directly from a URL and view them anytime, Add free",
   "permissions": [
-    "activeTab",
     "tabs",
     "storage"
   ],

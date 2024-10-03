@@ -10,31 +10,26 @@ body {
     color: #000; /* Light mode text color */
     position: relative;
 }
-
 .input-container {
     display: flex;
     align-items: center;
     gap: 5px;
 }
-
 input[type="text"] {
-    flex: 1;
+    flex: 8; /* 80% width */
     padding: 5px;
     background-color: #f0f0f0; /* Light input background */
     color: #000; /* Light input text color */
     border: 1px solid #ccc; /* Light input border */
     border-radius: 4px; /* Rounded corners */
 }
-
 input[type="text"]::placeholder {
     color: #888; /* Light placeholder text */
 }
-
 .button-container {
     display: flex;
     gap: 5px; /* Space between buttons */
 }
-
 button {
     flex: 1;
     padding: 5px;
@@ -48,52 +43,33 @@ button {
     border: 1px solid #ccc; /* Light button border */
     border-radius: 4px; /* Rounded corners */
 }
-
 button:hover {
     background-color: #e0e0e0; /* Slightly darker background on hover */
 }
 
 /* Dark mode styles */
 .dark-mode {
-    background-color: #1b1b1b; /* Dark mode background */
+    background-color: #000;; /* Dark mode background */
     color: #eee; /* Dark mode text color */
 }
-
-.light-mode {
-    background-color: #fff;
-    color: #000;
-}
-
 .dark-mode input[type="text"] {
     background-color: #000; /* Dark input background */
     color: #eee; /* Dark input text color */
     border: 1px solid #000; /* Dark input border */
 }
-
-.input-container.dark-mode input[type="text"] {
-    background-color: #000; /* Dark input background */
-    color: #eee; /* Dark input text color */
-    border: 1px solid #000; /* Dark input border */
+.dark-mode input[type="text"]::placeholder {
+    color: #888; /* Dark placeholder text */
 }
-
-.button-container.dark-mode button {
-    background-color: #555; /* Dark button background */
+.dark-mode button {
+    background-color: #010101; /* Dark button background */
     color: #eee; /* Dark button text color */
     border: 1px solid #000; /* Dark button border */
 }
-
-.light-mode input[type="text"] {
-    background-color: #f0f0f0;
-    color: #000;
-    border: 1px solid #ccc;
+.dark-mode button:hover {
+    background-color: #070707; /* Slightly lighter background on hover */
 }
 
 /* Toggle button */
-.toggle-button-container {
-    display: flex;
-    gap: 5px;
-}
-
 .toggle-mode {
     background: none;
     border: none;
@@ -102,30 +78,33 @@ button:hover {
     color: #000; /* Light mode icon color */
 }
 
-button.dark-mode {
-    background-color: #555; /* Dark button background */
-    color: #eee; /* Dark button text color */
-    border: 1px solid #000; /* Dark button border */
-}
-
-.light-mode button {
-    background-color: #f0f0f0;
-    color: #000;
-    border: 1px solid #ccc;
-}
 
 .dark-mode .toggle-mode {
     color: #eee; /* Dark mode icon color */
 }
+.toggle-mode.sun {
+    color: #121211; /* Sun color */
+}
+.toggle-mode.moon {
+    color: #3498db; /* Moon color */
+}
 
-.toggle-button-container {
-    display: flex;
-    gap: 5px;
+
+
+.title {
+    flex: 0 0 80%;         /* Take 80% of the width */
+    margin: 0;            /* Remove default margin */
+}
+
+.logo {
+    flex: 0 0 20%;         /* Take 20% of the width */
+    max-width: 25px;      /* Set a maximum width for the logo */
+    height: auto;         /* Keep aspect ratio */
 }
 
 /* Notification message */
 #successMessage {
-    display: none;
+    display: none; /* Initially hidden */
     padding: 10px;
     border-radius: 4px;
     background-color: #4caf50; /* Green background */
@@ -134,6 +113,42 @@ button.dark-mode {
     text-align: center;
 }
 
+#successMessage.visible {
+    display: block; /* Show when the class is added */
+}
+
 .dark-mode #successMessage {
     background-color: #45a049; /* Darker green background for dark mode */
+}
+
+
+
+.flex-container {
+    display: flex;          /* Use Flexbox for layout */
+    justify-content: space-between; /* Space between elements */
+    align-items: center;   /* Center items vertically */
+    width: 100%;           /* Ensure it takes full width of the parent */
+}
+
+/* Flexbox container for user info (icon and username) */
+.user-info {
+    display: flex;
+    align-items: center; /* Aligns icon and text vertically */
+}
+
+/* User icon style */
+.user-icon {
+    font-size: 24px; /* Adjust icon size */
+    margin-right: 8px; /* Space between icon and username */
+}
+
+/* User text style */
+.user {
+    font-size: 16px; /* Adjust font size */
+    color: #0d69d2; /* Example text color */
+}
+
+/* Logo style (positioned to the right) */
+.logo {
+    width: 25px;
 }

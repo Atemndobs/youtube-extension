@@ -1,194 +1,299 @@
-function updateToggleButtonIcon(isDarkMode) {
-    const toggleButton = document.getElementById('toggleModeButton');
-    const icon = toggleButton.querySelector('i');
+document.addEventListener("DOMContentLoaded", () => {
+  // Initialize the popup and user info
+  initializePopup();
+  updateUserInfo();
 
-    if (isDarkMode) {
-        icon.classList.remove('fa-sun');
-        icon.classList.add('fa-moon');
-    } else {
-        icon.classList.remove('fa-moon');
-        icon.classList.add('fa-sun');
-    }
+
+
+  // Event listeners
+  document
+    .getElementById("toggleModeButton")
+    .addEventListener("click", toggleTheme);
+  document
+    .getElementById("addToWatchlistButton")
+    .addEventListener("click", handleAddToWatchlist);
+  document
+    .getElementById("viewWatchlistButton")
+    .addEventListener("click", handleViewWatchlist);
+});
+
+// Event handler for adding to the watchlist
+function handleAddToWatchlist() {
+  const url = document.getElementById("youtubeUrl").value;
+  if (url) {
+    sendUrlToApi(url);
+  } else {
+    console.error("No URL provided.");
+  }
 }
 
+// Event handler for viewing the watchlist
+async function handleViewWatchlist() {
+  const deviceId = await getDeviceIdPromise();
+  if (!deviceId) {
+    console.error("No device ID available.");
+    return;
+  }
+  const url = document.getElementById("youtubeUrl").value;
+  const isValidUrl =
+    /^https?:\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?$/.test(
+      url
+    );
+
+  console.log({
+    view: "VIEWING ======",
+    url: url,
+    deviceId: deviceId,
+    isValidUrl: isValidUrl,
+  });
+
+  if (deviceId) {
+    if (!isValidUrl) {
+      console.error("No valid URL provided.");
+    }
+
+    const webAppUrl = `https://viewer.atemkeng.de/?deviceId=${deviceId}`;
+
+    if (isValidUrl) {
+      console.log("VALID URL ");
+      sendUrlToApi(url);
+    }
+
+    // Set a timeout before closing the page (or doing an action)
+    setTimeout(() => {
+      window.open(webAppUrl, "_blank");
+    }, 500); // 2000ms = 2 seconds
+  } else {
+    console.error("No device ID available.");
+  }
+}
+
+// Function to toggle the theme
 function toggleTheme() {
-    const theme = document.body;
-    const isDarkMode = theme.classList.contains('dark-mode');
-
-    if (isDarkMode) {
-        updateToggleButtonIcon(false);
-        theme.classList.remove('dark-mode');
-        theme.classList.add('light-mode');
-    } else {
-        updateToggleButtonIcon(true);
-        theme.classList.remove('light-mode');
-        theme.classList.add('dark-mode');
-    }
-
-    chrome.storage.local.set({ 'theme': !isDarkMode });
-}
-
-// ...
-
-chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-    if (changeInfo.status === 'complete') {
-        const isDarkMode = document.body.classList.contains('dark-mode');
-
-        updateToggleButtonIcon(isDarkMode);
-    }
-});
-
-document.getElementById('toggleModeButton').addEventListener('click', () => {
-    toggleTheme();
-});
-// Function to get the current tab's URL
-function getCurrentTabUrl(callback) {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs.length > 0) {
-            const tab = tabs[0];
-            callback(tab.url);
-        }
-    });
-}
-
-// Function to initialize the popup
-function initializePopup() {
-    getCurrentTabUrl((url) => {
-        if (url) {
-            document.getElementById('youtubeUrl').value = url;
-        }
-    });
-
-    // Load the user's theme preference
-    chrome.storage.local.get('theme', (result) => {
-        const isDarkMode = result.theme === 'dark';
-        document.body.classList.toggle('dark-mode', isDarkMode);
-        updateToggleButtonIcon(isDarkMode);
-    });
-}
-
-// Function to get the deviceId (either from local storage or server)
-function getDeviceId(callback) {
-    chrome.storage.local.get('deviceId', (result) => {
-        let deviceId = result.deviceId;
-        if (!deviceId) {
-            console.log('Device ID not found in local storage. Generating a new one...');
-            // Generate a new deviceId if none exists
-            deviceId = generateDeviceId();
-            chrome.storage.local.set({ 'deviceId': deviceId }, () => {
-                console.log('New device ID saved:', deviceId);
-                callback(deviceId);
-            });
-        } else {
-            console.log('Device ID retrieved from local storage:', deviceId);
-            callback(deviceId);
-        }
-    });
-}
-
-// Function to generate a new deviceId
-function generateDeviceId() {
-    const deviceId = Math.random().toString(36).substring(2) + Date.now().toString(36);
-    return deviceId;
-}
-
-// Function to send the YouTube URL to the provided API endpoint with deviceId
-function sendUrlToApi(url) {
-    getDeviceId(deviceId => {
-        if (!deviceId) {
-            console.error('No device ID available.');
-            return;
-        }
-
-        fetch('https://viewer.atemkeng.de/api/playlist', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: url, deviceId: deviceId, action: 'add' })  // Sending the YouTube URL and deviceId as the body
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('API Response:', data);  // Logging the API response
-            // Show a success message if the URL was added successfully
-            if (data.success) {
-                const message = document.getElementById('successMessage');
-                const addButton = document.getElementById('addToWatchlistButton');
-                const icon = addButton.querySelector('i');
-
-                // Change button icon and text
-                icon.classList.remove('anticon-plus');
-                icon.classList.add('anticon-check');
-                addButton.textContent = 'Added to Watchlist';
-                
-                // Show success message
-                message.classList.remove('hidden');
-                setTimeout(() => {
-                    message.classList.add('hidden');
-                }, 2000);
-            }
-            window.close();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            // Close the popup even if there's an error
-            window.close();
-        });
-    });
+  const theme = document.body;
+  const isDarkMode = theme.classList.toggle("dark-mode");
+  theme.classList.toggle("light-mode", !isDarkMode);
+  updateToggleButtonIcon(isDarkMode);
+  chrome.storage.local.set({ theme: isDarkMode ? "dark" : "light" }); // Save the theme preference
 }
 
 // Function to update the toggle button icon
 function updateToggleButtonIcon(isDarkMode) {
-    const toggleButton = document.getElementById('toggleModeButton');
-    const icon = toggleButton.querySelector('i');
-    if (isDarkMode) {
-        icon.classList.remove('anticon-sun');
-        icon.classList.add('anticon-moon');
-    } else {
-        icon.classList.remove('anticon-moon');
-        icon.classList.add('anticon-sun');
-    }
+  const icon = document.getElementById("toggleModeButton").querySelector("i");
+  icon.className = isDarkMode ? "fas fa-moon" : "fa-regular fa-moon";
 }
 
-// Event listener for the "Add to Watchlist" button
-document.getElementById('addToWatchlistButton').addEventListener('click', function () {
-    const url = document.getElementById('youtubeUrl').value;
+// Function to initialize the popup and load the current tab's URL
+function initializePopup() {
+  getCurrentTabUrl((url) => {
     if (url) {
-        sendUrlToApi(url);  // Send the URL to the new API endpoint
-    } else {
-        console.error('No URL provided.');
+      document.getElementById("youtubeUrl").value = url;
     }
-});
+  });
 
-// Event listener for the "View Watchlist" button
-document.getElementById('viewWatchlistButton').addEventListener('click', function () {
-    chrome.storage.local.get('deviceId', (result) => {
-        const deviceId = result.deviceId;
-        if (deviceId) {
-            const url = document.getElementById('youtubeUrl').value;
-            // check if url is a valid youtube url
-            const youtubeRegex = /^https?:\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?$/;
-            if (!youtubeRegex.test(url)) {
-                console.error('No URL provided.');
-                const webAppUrl = `https://viewer.atemkeng.de/?deviceId=${deviceId}`;
-                window.open(webAppUrl, '_blank');
-            } else {
-                sendUrlToApi(url);  // Send the URL to the new API endpoint
-                const webAppUrl = `https://viewer.atemkeng.de/?deviceId=${deviceId}`;
-                window.open(webAppUrl, '_blank');
-            }
-        } else {
-            console.error('No device ID available.');
-        }
+  // Load user's theme preference
+  chrome.storage.local.get("theme", (result) => {
+    const isDarkMode = result.theme === "dark";
+    document.body.classList.toggle("dark-mode", isDarkMode);
+    updateToggleButtonIcon(isDarkMode);
+  });
+}
+
+// Function to get the current tab's URL
+function getCurrentTabUrl(callback) {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs.length > 0) {
+      callback(tabs[0].url);
+    }
+  });
+}
+
+// Function to send the YouTube URL to the provided API endpoint with deviceId
+async function sendUrlToApi(url) {
+  try {
+    const deviceId = await getDeviceIdPromise();
+    if (!deviceId) {
+      console.error("No device ID available.");
+      return;
+    }
+
+    const response = await fetch("https://viewer.atemkeng.de/api/playlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, deviceId, action: "add" }),
     });
+
+    const data = await response.json();
+    console.log("API Response:", data);
+    if (data.playlist) {
+      displaySuccessMessage(data);
+    }
+  } catch (error) {
+    console.error("Error:", error);
+  }
+}
+
+// Helper function to get device ID as a promise
+function getDeviceIdPromise() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get("deviceId", (result) => {
+      const deviceId = result.deviceId || generateDeviceId();
+      chrome.storage.local.set({ deviceId }, () => resolve(deviceId));
+    });
+  });
+}
+
+// Function to generate a new device ID
+function generateDeviceId() {
+  const uniqueUsername = generateRandomUsername();
+  localStorage.setItem("deviceId", uniqueUsername);
+  return uniqueUsername;
+}
+
+// Function to display success message
+function displaySuccessMessage(data) {
+  const title = data.playlist[0]?.title || "Added to Watchlist"; // Fallback title
+  const addButton = document.getElementById("addToWatchlistButton");
+  const icon = addButton.querySelector("i");
+
+  // Update button icon and text
+  icon.classList.replace("fa-plus", "fa-check");
+  addButton.innerHTML = `<i class="${icon.className}"></i> Added to Watchlist`;
+
+  // Update the "View Watchlist" button
+  const viewButton = document.getElementById("viewWatchlistButton");
+  const viewIcon = viewButton.querySelector("i");
+  viewIcon.className = "fa-solid fa-circle-play";
+  viewButton.innerHTML = `<i class="${viewIcon.className}"></i> Watch Now!`;
+
+  // Show the success message
+  const successMessageElement = document.getElementById("successMessage");
+  successMessageElement.innerHTML = title;
+  successMessageElement.classList.add("visible"); // Use visibility instead of display
+
+  // Hide the success message after 2 seconds
+  setTimeout(() => {
+    successMessageElement.classList.remove("visible");
+    window.close(); // Close the popup after hiding the message
+  }, 2000); // 2000 milliseconds = 2 seconds
+}
+
+//   // Arrays of emojis for animal icons and username generation
+const animalIcons = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐨', '🐯', '🦁', 
+    '🐮', '🐷', '🐽', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', 
+    '🦃', '🐧', '🐦', '🐤', '🐣', '🐥', '🐺', '🐗', '🐴', '🦄', 
+    '🐝', '🐛', '🕷', '🦂', '🦋', '🐙', '🦑', '🦘', '🦦', '🐫'
+ ];
+
+const adjectives = [
+  "cool",
+  "fancy",
+  "shiny",
+  "brave",
+  "wild",
+  "mysterious",
+  "cosmic",
+  "fierce",
+  "epic",
+  "brilliant",
+  "dashing",
+  "stellar",
+  "vivid",
+  "bold",
+  "noble",
+];
+
+const nouns = [
+  "warrior",
+  "phoenix",
+  "ninja",
+  "pirate",
+  "tiger",
+  "dragon",
+  "unicorn",
+  "rider",
+  "wizard",
+  "samurai",
+  "knight",
+  "guardian",
+  "shadow",
+  "ranger",
+  "vortex",
+];
+
+const verbs = [
+  "runner",
+  "jumper",
+  "slasher",
+  "fighter",
+  "seeker",
+  "breaker",
+  "crusher",
+  "master",
+  "defender",
+  "blaster",
+  "striker",
+  "sniper",
+  "rider",
+  "caster",
+  "charger",
+];
+
+// Function to generate unique, fancy usernames
+function generateRandomUsername() {
+  const randomAdjective = getRandomElement(adjectives);
+  const randomNoun = getRandomElement(nouns);
+  const randomVerb = getRandomElement(verbs);
+  const uniqueUsername = `${randomAdjective}-${randomNoun}-${randomVerb}-${Date.now().toString(
+    36
+  )}`;
+  localStorage.setItem("deviceId", uniqueUsername);
+  return uniqueUsername;
+}
+
+// Helper function to get a random element from an array
+function getRandomElement(array) {
+  return array[Math.floor(Math.random() * array.length)];
+}
+
+async function getUserDeviceId() {
+    const deviceId = await getDeviceIdPromise();
+    // Return the first three parts of the deviceId
+    return deviceId.split("-").slice(0, 3).join("-");
+  }
+  
+// Function to get user icon based on username
+function getUserIcon(username) {
+  const index = username.charCodeAt(0) % animalIcons.length; // Use username's first character to pick icon
+  return animalIcons[index];
+}
+
+// Function to update the UI with the username and icon
+async function updateUserInfo() {
+  const username = await getUserDeviceId();
+  document.getElementById("user").textContent = username; // Set the username
+  // Get current icon index from localStorage or set to default
+  const storedIconIndex = localStorage.getItem("iconIndex");
+  const iconIndex = storedIconIndex ? parseInt(storedIconIndex, 10) : 0; // Default to 0 if not set
+  document.getElementById("userIcon").textContent = animalIcons[iconIndex]; // Set the icon
+}
+
+// Initialize user icon click action
+const userIcon = document.getElementById("userIcon");
+let currentIconIndex = 0; // Initialize current icon index
+
+// Set current icon index based on localStorage
+const storedIconIndex = localStorage.getItem("iconIndex");
+if (storedIconIndex) {
+  currentIconIndex = parseInt(storedIconIndex, 10);
+  userIcon.textContent = animalIcons[currentIconIndex]; // Set the initial icon
+}
+
+userIcon.addEventListener("click", () => {
+  currentIconIndex = (currentIconIndex + 1) % animalIcons.length; // Cycle through the icons
+  userIcon.textContent = animalIcons[currentIconIndex]; // Update the icon
+  localStorage.setItem("iconIndex", currentIconIndex); // Save the current icon index to localStorage
+  console.log("Icon changed to:", animalIcons[currentIconIndex]);
 });
 
-// Event listener for the theme toggle button
-document.getElementById('toggleModeButton').addEventListener('click', () => {
-    const isDarkMode = document.body.classList.contains('dark-mode');
-    const newMode = isDarkMode ? 'light' : 'dark';
-    document.body.classList.toggle('dark-mode', !isDarkMode);
-    updateToggleButtonIcon(!isDarkMode);
-    chrome.storage.local.set({ 'theme': newMode });
-});
 
-// Initialize the popup
-initializePopup();
