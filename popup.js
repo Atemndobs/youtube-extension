@@ -58,8 +58,8 @@ async function handleViewWatchlist() {
       console.error("No valid URL provided.");
     }
 
-    // const webAppUrl = `https://viewer.atemkeng.de/?deviceId=${deviceId}`;
-    webAppUrl = `http://192.168.178.67:3000/?deviceId=${deviceId}`;
+    const webAppUrl = `https://viewer.atemkeng.de/?deviceId=${deviceId}`;
+    // webAppUrl = `http://192.168.178.67:3000/?deviceId=${deviceId}`;
 
     if (isValidUrl) {
       console.log("VALID URL ");
