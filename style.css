@@ -146,10 +146,7 @@ button:hover {
     margin-right: 8px; /* Space between icon and username */
     cursor: pointer;
 }
-.user-icon:hover {
-    background-color: #e0e0e0; /* Slightly darker background on hover */
-
-}
+/*  */
 
 /* User text style */
 .user {
