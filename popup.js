@@ -15,6 +15,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("viewWatchlistButton")
     .addEventListener("click", handleViewWatchlist);
+  document
+    .getElementById("collectYouTubeVideosButton")
+    .addEventListener("click", handleCollectYouTubeVideos);
+  document
+    .getElementById("sharePlaylistButton")
+    .addEventListener("click", handleSharePlaylist);
 });
 
 // Event handler for adding to the watchlist
@@ -52,7 +58,8 @@ async function handleViewWatchlist() {
       console.error("No valid URL provided.");
     }
 
-    const webAppUrl = `https://viewer.atemkeng.de/?deviceId=${deviceId}`;
+    // const webAppUrl = `https://viewer.atemkeng.de/?deviceId=${deviceId}`;
+    webAppUrl = `http://192.168.178.67:3000/?deviceId=${deviceId}`;
 
     if (isValidUrl) {
       console.log("VALID URL ");
@@ -135,11 +142,17 @@ async function sendUrlToApi(url) {
 
 // Helper function to get device ID as a promise
 function getDeviceIdPromise() {
+
   return new Promise((resolve) => {
+
+    deviceId = 'dashing-pirate-seeker';
+    chrome.storage.local.set({ deviceId }, () => resolve(deviceId));
+
     chrome.storage.local.get("deviceId", (result) => {
       const deviceId = result.deviceId || generateDeviceId();
       chrome.storage.local.set({ deviceId }, () => resolve(deviceId));
     });
+ 
   });
 }
 
@@ -152,7 +165,8 @@ function generateDeviceId() {
 
 // Function to display success message
 function displaySuccessMessage(data) {
-  const title = data.playlist[0]?.title || "Added to Watchlist"; // Fallback title
+
+  title = data.playlist[0]?.title || "Added to Watchlist"; // Fallback title
   const addButton = document.getElementById("addToWatchlistButton");
   const icon = addButton.querySelector("i");
 
@@ -179,11 +193,12 @@ function displaySuccessMessage(data) {
 }
 
 //   // Arrays of emojis for animal icons and username generation
-const animalIcons = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐨', '🐯', '🦁', 
-    '🐮', '🐷', '🐽', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', 
-    '🦃', '🐧', '🐦', '🐤', '🐣', '🐥', '🐺', '🐗', '🐴', '🦄', 
-    '🐝', '🐛', '🕷', '🦂', '🦋', '🐙', '🦑', '🦘', '🦦', '🐫'
- ];
+  const animalIcons = [
+    '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐨', '🐯', '🦁', 
+      '🐮', '🐷', '🐽', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', 
+      '🦃', '🐧', '🐦', '🐤', '🐣', '🐥', '🐺', '🐗', '🐴', '🦄', 
+      '🐝', '🐛', '🕷', '🦂', '🦋', '🐙', '🦑', '🦘', '🦦', '🐫'
+  ];
 
 const adjectives = [
   "cool",
@@ -297,3 +312,68 @@ userIcon.addEventListener("click", () => {
 });
 
 
+// Event handler for collecting YouTube videos from all open tabs
+function handleCollectYouTubeVideos() {
+  chrome.tabs.query({}, function (tabs) {
+    const youtubeVideos = [];
+
+    tabs.forEach(tab => {
+      // Check if the URL contains "youtube.com/watch"
+      if (tab.url && tab.url.includes('youtube.com/watch')) {
+        youtubeVideos.push(tab.url);
+      }
+    });
+
+    if (youtubeVideos.length > 0) {
+      // Send all YouTube URLs to the API
+      youtubeVideos.forEach((url, index) => {
+        // Introduce a small delay between each request (e.g., 200ms)
+        setTimeout(() => {
+          sendUrlToApi(url);
+        }, index * 200);
+      });
+    } else {
+      console.log('No YouTube videos found in open tabs.');
+    }
+  });
+}
+
+
+// Function to copy the playlist URL to the clipboard
+async function handleSharePlaylist() {
+  try {
+    const deviceId = await getDeviceIdPromise();
+    if (!deviceId) {
+      console.error("No device ID available.");
+      return;
+    }
+
+    // Construct the playlist URL
+    const webAppUrl = `https://viewer.atemkeng.de/?deviceId=${deviceId}`;
+
+    // Copy the URL to the clipboard
+    await navigator.clipboard.writeText(webAppUrl);
+    console.log("Playlist URL copied to clipboard:", webAppUrl);
+
+    // Notify the user that the link has been copied
+    showCopyNotification("Playlist link copied to clipboard!");
+    // displaySuccessMessage("Playlist link copied to clipboard!");
+  } catch (error) {
+    console.error("Failed to copy playlist URL:", error);
+  }
+}
+
+// Function to display a notification when the link is copied
+function showCopyNotification(message) {
+  const notification = document.createElement("div");
+  notification.id = "copyNotification";
+  notification.textContent = message;
+  notification.classList.add("notification");
+
+  document.body.appendChild(notification);
+
+  // Remove the notification after 2 seconds
+  setTimeout(() => {
+    document.body.removeChild(notification);
+  }, 2000);
+}

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "YouTube Watchlist",
   "version": "1.0.1",
-  "description": "Easily create and manage a watchlist of your favorite YouTube videos. Save videos directly from a URL and view them anytime, Add free",
+  "description": "Easily create a watchlist of YouTube videos and watch Add free",
   "permissions": [
     "tabs",
     "storage"
@@ -22,6 +22,7 @@
     "48": "fav_ivon_lightmode@2x.png",
     "128": "fav_ivon_lightmode@2x.png"
   },
+  
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://viewer.atemkeng.de/"
   }
