@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Watchlist",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "Easily create a watchlist of YouTube videos and watch Ad free",
   "permissions": [
     "tabs",

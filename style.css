@@ -125,6 +125,26 @@ button:hover {
     background-color: #45a049; /* Darker green background for dark mode */
 }
 
+/* Notification message */
+#errorMessage {
+    display: none; /* Initially hidden */
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #f44336; /* Red background for error */
+    color: white;
+    font-weight: bold;
+    text-align: center;
+}
+
+#errorMessage.visible {
+    display: block; /* Show when the class is added */
+}
+
+.dark-mode #errorMessage {
+    background-color: #e53935; /* Darker red background for dark mode */
+}
+
+
 
 
 .flex-container {

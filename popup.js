@@ -27,7 +27,12 @@ document.addEventListener("DOMContentLoaded", () => {
 function handleAddToWatchlist() {
   const url = document.getElementById("youtubeUrl").value;
   if (url) {
-    sendUrlToApi(url);
+    try {
+      sendUrlToApi(url);
+    } catch (error) {
+      displaySuccessMessage("Error: " + error);
+    }
+
   } else {
     console.error("No URL provided.");
   }
@@ -132,8 +137,12 @@ async function sendUrlToApi(url) {
 
     const data = await response.json();
     console.log("API Response:", data);
+
+    if (response.status!== 200) {
+      displayErrorMessage(data.error)
+    }
     if (data.playlist) {
-      displaySuccessMessage(data);
+      displaySuccessMessage("Added to Watchlist");
     }
   } catch (error) {
     console.error("Error:", error);
@@ -145,7 +154,7 @@ function getDeviceIdPromise() {
 
   return new Promise((resolve) => {
 
-    deviceId = 'dashing-pirate-seeker';
+    deviceId = 'brave-vortex-caster-m20df1on';
     chrome.storage.local.set({ deviceId }, () => resolve(deviceId));
 
     chrome.storage.local.get("deviceId", (result) => {
@@ -162,11 +171,36 @@ function generateDeviceId() {
   localStorage.setItem("deviceId", uniqueUsername);
   return uniqueUsername;
 }
+// Function to display error message
+// Function to display error message
+function displayErrorMessage(title) {
+
+  const addButton = document.getElementById("addToWatchlistButton");
+  const icon = addButton.querySelector("i");
+
+  // Update button icon and text to show a cross for error
+  icon.classList.replace("fa-plus", "fa-times"); // Or "fa-x" based on your Font Awesome version
+  addButton.innerHTML = `<i class="${icon.className}"></i> Failed to add`;
+
+  // Show the error message
+  const errorMessageElement = document.getElementById("errorMessage");
+  errorMessageElement.innerHTML = title;
+  errorMessageElement.classList.add("visible");
+
+  // Hide the error message after 2 seconds
+  setTimeout(() => {
+    errorMessageElement.classList.remove("visible");
+    window.close(); // Close the popup after hiding the message
+  }, 2000); // 2000 milliseconds = 2 seconds
+}
+
+
 
 // Function to display success message
-function displaySuccessMessage(data) {
+function displaySuccessMessage(title) {
 
-  title = data.playlist[0]?.title || "Added to Watchlist"; // Fallback title
+  // title = data.playlist[0]?.title || "Added to Watchlist"; // Fallback title
+  // title =  "Added to Watchlist"; 
   const addButton = document.getElementById("addToWatchlistButton");
   const icon = addButton.querySelector("i");
 
@@ -191,6 +225,7 @@ function displaySuccessMessage(data) {
     window.close(); // Close the popup after hiding the message
   }, 2000); // 2000 milliseconds = 2 seconds
 }
+
 
 //   // Arrays of emojis for animal icons and username generation
   const animalIcons = [
