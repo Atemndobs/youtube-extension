@@ -4,50 +4,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Player</title>
+    <title>Apartment Finder</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-
-    <style>
-        /* Additional styles can go here if needed */
-    </style>
 </head>
 
 <body>
     <div class="flex-container">
-        <div class="user-info">
-            <div id="userIcon" class="user-icon" role="button"></div>
-            <p id="user" class="user">Loading user...</p>
-        </div>
         <span class="toggle-mode-span" id="toggleModeButton">
             <i class="fas fa-moon"></i>
         </span>
     </div>
     <div class="input-container">
-        <input id="youtubeUrl" type="text" placeholder="Enter YouTube URL">
+        <input id="appartUrl" type="text" placeholder="Enter Apartment URL">
         <button class="toggle-mode">
             <i class="fas fa-share" id="sharePlaylistButton"></i>
         </button>
-
+    </div>
+    <div class="input-container">
+        <input id="targetAddress" type="text" value="INGTES AG, Bahnhofstrasse 94, 5000 Aarau, Switzerland" readonly>
     </div>
     <div class="button-container">
-        <button id="addToWatchlistButton">
-            <i class="fas fa-plus" id="add_icon"></i>
-            Add This Video
-        </button>
-        <button id="collectYouTubeVideosButton">
-            <i class="fas fa-list"></i>
-            Add Video Tabs
-        </button>
-        <button id="viewWatchlistButton">
-            <i class="fa-regular fa-eye"></i>
-            Open Watchlist
+        <button id="getDistanceButton">
+            <i class="fas fa-road" id="distance_icon"></i>
+            Get Distance
         </button>
     </div>
-    <div id="successMessage">Added to Watchlist!</div>
+    <div id="successMessage">Distance Retrieved!</div>
     <div id="errorMessage"></div>
+    <div id="distanceResults"></div> <!-- To display distance results -->
     <script src="popup.js"></script>
-
 </body>
 
 </html>

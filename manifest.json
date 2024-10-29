@@ -1,29 +1,29 @@
 {
   "manifest_version": 3,
-  "name": "YouTube Watchlist",
-  "version": "1.0.4",
-  "description": "Easily create a watchlist of YouTube videos and watch Ad free",
+  "name": "Find Appart",
+  "version": "0.0.1",
+  "description": "Extension to compare workplace distance to potential appartment",
   "permissions": [
     "tabs",
     "storage"
   ],
   "host_permissions": [
-    "https://viewer.atemkeng.de/*"
+    "https://n8n.atemkeng.de/*"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "YouTube Watchlist"
+    "default_title": "Find apart"
   },
   "icons": {
-    "16": "fav_ivon_lightmode@2x.png",
-    "48": "fav_ivon_lightmode@2x.png",
-    "128": "fav_ivon_lightmode@2x.png"
+    "16": "icon/icons8-video-playlist-96.png",
+    "48": "icon/icons8-video-playlist-96.png",
+    "128": "icon/icons8-video-playlist-128.png"
   },
   
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://viewer.atemkeng.de/"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://n8n.atemkeng.de/"
   }
 }
