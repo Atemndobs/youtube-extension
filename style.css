@@ -205,3 +205,310 @@ button:hover {
     background-color: #000000; /* Light button background */
     border: 1px solid #2b2b2b; /* Dark button border */
 }
+
+
+
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);   
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 10px;
+    width: 90%;
+    max-width: 35   0px;
+}
+
+.close {
+    float: right;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+
+/* Modal content layout */
+.modal-content {
+    padding: 20px;
+    width: 300px; /* Adjust width as needed */
+}
+
+/* Flex layout for header */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+#saveSettingsButton {
+    cursor: pointer;
+    font-size: 20px;
+}
+
+/* Icon styling */
+.info-icon {
+    font-size: 12px; /* Adjusts icon size */
+    margin-left: 5px; /* Adds space between icon and text */
+    vertical-align: middle; /* Aligns icon vertically with text */
+    color: #555; /* Optional: Change icon color */
+    cursor: pointer; /* Indicates clickability */
+}
+
+/* Tooltip styling for text below the table */
+.tooltip-container {
+    display: none; /* Hidden initially */
+    text-align: center;
+    font-size: 14px; /* Adjust font size as needed */
+    margin-top: 10px; /* Adds space between the table and tooltip */
+    color: #555; /* Optional: Change tooltip color */
+    max-width: 80%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
+
+
+
+.info-icon-container {
+    position: relative;
+    display: inline-block;
+}
+
+.info-icon-container .tooltip-text {
+    visibility: hidden;
+    width: 220px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    padding: 5px;
+    border-radius: 5px;
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.info-icon-container:hover .tooltip-text {
+    visibility: hidden;
+    opacity: 1;
+}
+
+
+/* Styled Checkbox */
+.styled-checkbox {
+    -webkit-appearance: none; /* Removes default checkbox styling */
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 2px solid #04070b;
+    background-color: white;
+    cursor: pointer;
+    position: relative;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+/* Checkbox checked state */
+.styled-checkbox:checked {
+    background-color: #070a0d;
+    border-color: #030405;
+}
+
+.styled-checkbox:checked::after {
+    content: "\2713"; /* Adds a checkmark */
+    color: white;
+    font-size: 16px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Hover effect to make checkbox feel button-like */
+.styled-checkbox:hover {
+    border-color: #5b83ad;
+    background-color: #3d4c5c;
+}
+
+
+.label-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+label[type="text"] {
+    flex: 8; /* 80% width */
+    padding: 5px;
+    background-color: #ffffff; /* Light input background */
+    color: #000000; /* Light input text color */
+    border: 1px solid #ccc; /* Light input border */
+    border-radius: 4px; /* Rounded corners */
+}
+label[type="text"]::placeholder {
+    color: #888; /* Light placeholder text */
+    font-size: 32px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Modal Styles for Address List */
+#addressModal {
+    display: none;
+    position: fixed;
+    z-index: 2;
+    left: 5;
+    top: 5;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Dark semi-transparent background */
+}
+
+#addressModalContent {
+    background-color: #fff;
+    margin: 5% auto;
+    padding: 10px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    overflow-y: auto; /* Allows scrolling if content exceeds modal height */
+    max-height: 70vh;
+}
+
+#addressModalContent h3 {
+    font-size: 18px;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.close-address-modal {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+}
+
+.close-address-modal:hover {
+    color: #333;
+}
+
+/* Address List Styling */
+.address-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 5px 0;
+}
+
+.address-list li {
+    padding: 5px;
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    margin-bottom: 2px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.address-list li:hover {
+    background-color: #e0e0e0;
+}
+
+/* Dark Mode Adjustments */
+.dark-mode #addressModalContent {
+    background-color: #222;
+    color: #eee;
+}
+
+.dark-mode .address-list li {
+    background-color: #333;
+    border-color: #444;
+}
+
+.dark-mode .address-list li:hover {
+    background-color: #444;
+}
+.dark-mode #addressModal h3 {
+    color: #ccc; /* Light heading color */
+}
+
+
+
+
+/* Dark Mode Styling for Settings Modal */
+.dark-mode #settingsModal .modal-content {
+    background-color: #222; /* Dark background for modal */
+    color: #eee; /* Light text color */
+}
+
+.dark-mode #settingsModal h3 {
+    color: #ccc; /* Light heading color */
+}
+
+.dark-mode #settingsModal .input-container input[type="text"] {
+    background-color: #333; /* Darker input background */
+    color: #eee; /* Light text color */
+    border: 1px solid #444; /* Darker border */
+}
+
+.dark-mode #settingsModal .input-container input[type="text"]::placeholder {
+    color: #888; /* Muted placeholder text */
+}
+
+.dark-mode #settingsModal button {
+    background-color: #333; /* Dark button background */
+    color: #eee; /* Light button text */
+    border: 1px solid #444; /* Darker border */
+}
+
+.dark-mode #settingsModal button:hover {
+    background-color: #444; /* Darker on hover */
+}
+
+.dark-mode #settingsModal .styled-checkbox {
+    background-color: #333; /* Dark checkbox background */
+    border-color: #444; /* Darker border */
+}
+
+.dark-mode #settingsModal .styled-checkbox:checked {
+    background-color: #555; /* Checked state background */
+    border-color: #666; /* Checked state border */
+}
+
+.dark-mode #settingsModal .close {
+    color: #ccc; /* Light close icon */
+}
+
+.dark-mode #settingsModal .close:hover {
+    color: #fff; /* Brighter close icon on hover */
+}

@@ -1,29 +1,29 @@
 {
   "manifest_version": 3,
-  "name": "Find Appart",
-  "version": "0.0.1",
-  "description": "Extension to compare workplace distance to potential appartment",
+  "name": "How Far",
+  "version": "0.0.2",
+  "description": "Calculates distances from selected locations to a default target location, like a workplace or nearby restaurant.",
   "permissions": [
     "tabs",
     "storage"
   ],
   "host_permissions": [
-    "https://n8n.atemkeng.de/*"
+    "https://fastapi.curator.atemkeng.eu/*"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Find apart"
+    "default_title": "How Far"
   },
   "icons": {
-    "16": "icon/icons8-video-playlist-96.png",
-    "48": "icon/icons8-video-playlist-96.png",
-    "128": "icon/icons8-video-playlist-128.png"
+    "16": "icon/icons8-user-location-48.png",
+    "48": "icon/icons8-user-location-48.png",
+    "128": "icon/icons8-user-location-96.png"
+    
   },
-  
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://n8n.atemkeng.de/"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src *;"
   }
 }
