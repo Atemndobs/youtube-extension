@@ -1,102 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apartment Finder</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+  <title>Read Me - TTS</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="modal">
-        <div class="modal-content">
-            <span title="Cancel" id="closeSettings" class="close">&times;</span>
-            <h3>Default Settings</h3>
-            <div class="input-container">
-                <input type="text" id="defaultTargetAddress" placeholder="Enter default target address">
-                <button title="Save Settings">
-                    <i id="saveSettingsButton" class="fa-regular fa-floppy-disk"></i>
-                </button>
-            </div>
+  <div class="input-container">
+    <button title="Dark Mode" id="darkModeToggle">
+      <i class="fa-solid fa-circle-half-stroke"></i>
+    </button>
+    <button title="Open in floating window"id="openInFloatingWindow" >
+      <i class="fa-solid fa-up-right-from-square"></i>
+    </button>
+    <button title="Close" id="closeButton">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+  <!-- <h2>Read Me - TTS</h2> -->
 
-            <!-- <div class="input-container">
-                <label type="text">Show/Hide the Add to List <i class="fa-solid fa-plus"></i> Button</label>
-                <button title="Show/Hide List Button">
-                    <input title="Show/Hide List Button" type="checkbox" id="showAddToListButton"
-                        class="styled-checkbox">
-                </button>
-            </div> -->
-        </div>
-    </div>
-    </div>
-    </div>
+  <!-- Dropdown for selecting model -->
+<label for="modelSelect">Language:</label>
+<select id="modelSelect">
+  <option value="voice-en-us">English (US)</option>
+  <option value="voice-en-gb">English (GB)</option>
+  <option value="voice-de">German (DE)</option>
+  <option value="voice-it">Italian</option>
+  <option value="voice-fr">French</option>
+  <option value="voice-es">Spanish (ES)</option>
+</select>
+<!-- Dropdown for selecting voice -->
+<label for="voiceSelect">Voice:</label>
+<select id="voiceSelect"></select>
+  <textarea id="textInput" placeholder="Enter text here"></textarea>
+  <button id="convertButton">Convert to Speech</button>
+  <!-- <button id="openInFloatingWindow">Open in Floating Window</button>  -->
+  <div id="message"></div>
+  <div id="audioContainer"></div> <!-- Container to hold multiple audio elements -->
 
-    <!-- Load Addresses Modal -->
-    <!-- <div id="addressModal" class="modal">
-    <div id="addressModalContent" class="modal-content">
-        <span title="Close" id="closeAddressModal" class="close-address-modal">&times;</span>
-        <h3>Addresses found on this page</h3>
-        <ul id="addressList" class="address-list">
-            <li class="address-item" data-address="Address 1, Street 123, City">Address 1, Street 123, City <i class="fa-solid fa-map-pin"></i></li>
-            <li class="address-item" data-address="Landstreed 2, Street 456, City">Landstreed 2, Street 456, Citpluss Deutschland <i class="fa-solid fa-map-pin"></i></li>
-            <li class="address-item" data-address="Gorecasting 3,Street 789, City ">AGorecasting 3,Street 789, City 789, City <i class="fa-solid fa-map-pin"></i></li>
-            <li class="address-item" data-address="Marmaldia 3, Street 789, City ">Address Marmaldia 3, Street 789, City <i class="fa-solid fa-map-pin"></i></li>
-            <li class="address-item" data-address="homeplace 9,  Street 789, City ">homeplace 9,  Street 789, City City <i class="fa-solid fa-map-pin"></i></li>
-        </ul>
-    </div>
-</div> -->
-
-    <!-- Load Addresses Modal -->
-    <div id="addressModal" class="modal">
-        <div class="modal-content">
-            <span title="Close" id="closeAddressModal" class="close">&times;</span>
-            <h3>Addresses found on this page</h3>
-            <div id="addressError" class="error-message"></div> 
-            <ul id="addressList"></ul>
-        </div>
-    </div>
-
-
-    <div class="flex-container">
-        <span class="toggle-mode-span" id="toggleModeButton" title="Toggle Dark Mode">
-            <i class="fas fa-moon"></i>
-        </span>
-
-        <!-- <span class="toggle-mode-span" id="load_addresses" title="Load all addresses on this page">
-            <i class="fa-solid fa-location-crosshairs"></i>
-        </span> -->
-        <span class="toggle-mode-span" id="settings" title="Settings">
-            <i class="fa-solid fa-gear" id="settings"></i>
-        </span>
-    </div>
-    <div class="input-container">
-        <input id="appartUrl" type="text" placeholder="Enter Apartment URL">
-        <button title="view start location on maps" id="locationButtonApartment">
-            <i class="fa-solid fa-location-dot"></i>
-        </button>
-    </div>
-    <div class="input-container">
-        <input title="locationInput" id="targetAddress" type="text" value="">
-        <button title="view destination on maps" id="locationButtonTarget">
-            <i class="fa-solid fa-flag-checkered"></i>
-        </button>
-    </div>
-    <div class="button-container">
-        <button id="getDistanceButton" title="How to get from location to destination">
-            <i class="fa-solid fa-map-location-dot" title="How far ist it from Location to destination?"></i>
-            Get Distance
-        </button>
-        <span class="toggle-mode-span" id="addToList">
-            <i class="fa-solid fa-plus"></i>
-        </span>
-    </div>
-    <div id="successMessage">Distance Retrieved!</div>
-    <div id="errorMessage"></div>
-    <div id="distanceResults"></div> <!-- To display distance results -->
-    <script src="popup.js"></script>
+  <script src="popup.js"></script>
 </body>
 
 </html>

@@ -1,29 +1,31 @@
 {
   "manifest_version": 3,
-  "name": "How Far",
-  "version": "0.0.2",
-  "description": "Calculates distances from selected locations to a default target location, like a workplace or nearby restaurant.",
-  "permissions": [
-    "tabs",
-    "storage"
-  ],
+  "name": "Read Me",
+  "version": "1.2",
+  "description": "A Chrome extension that converts text to speech using an external API.",
+  "permissions": ["storage", "contextMenus", "activeTab", "scripting", "tabs"],
   "host_permissions": [
-    "https://fastapi.curator.atemkeng.eu/*"
+    "http://45.94.111.107/*",
+    "https://voice.cloud.atemkeng.de/*"
   ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon/icons8-voice-recognition-48.png",
+      "48": "icon/icons8-voice-recognition-48.png",
+      "128": "icon/icons8-voice-recognition-96.png"
+    }
+  },
+  "icons": {
+    "16": "icon/icons8-voice-recognition-48.png",
+    "32": "icon/icons8-voice-recognition-48.png",
+    "48": "icon/icons8-voice-recognition-48.png",
+    "128": "icon/icons8-voice-recognition-96.png"
+  },
   "background": {
     "service_worker": "background.js"
   },
-  "action": {
-    "default_popup": "popup.html",
-    "default_title": "How Far"
-  },
-  "icons": {
-    "16": "icon/icons8-user-location-48.png",
-    "48": "icon/icons8-user-location-48.png",
-    "128": "icon/icons8-user-location-96.png"
-    
-  },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src *;"
+    "extension_pages": "script-src 'self'; object-src 'self';"
   }
 }
