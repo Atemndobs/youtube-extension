@@ -26,15 +26,21 @@ toggleConvertButton();
 // Listen for input changes to update the button state
 textInput.addEventListener("input", toggleConvertButton);
 
-// Keep track of currently playing audio
+// Keep track of currently playing audio and all audio elements
 let currentlyPlayingAudio = null;
+let audioElements = [];
+
+// Function to play the next audio in sequence
+function playNextAudio(currentAudio) {
+  const currentIndex = audioElements.indexOf(currentAudio);
+  if (currentIndex >= 0 && currentIndex < audioElements.length - 1) {
+    const nextAudio = audioElements[currentIndex + 1];
+    nextAudio.play();
+  }
+}
 
 // Function to stop all audio except the one provided
 function stopOtherAudio(exceptAudio) {
-  // Get all audio elements
-  const audioElements = document.querySelectorAll('audio');
-  
-  // Stop all audio except the one provided
   audioElements.forEach(audio => {
     if (audio !== exceptAudio) {
       audio.pause();
@@ -96,8 +102,9 @@ async function createAudioEntry(text, audioUrl, timestamp = Date.now(), voiceMod
     }, 100);
   });
   
-  // Add ended event listener to clear currently playing audio
+  // Add ended event listener for auto-play next and cleanup
   audioElement.addEventListener("ended", () => {
+    playNextAudio(audioElement);
     if (currentlyPlayingAudio === audioElement) {
       currentlyPlayingAudio = null;
     }
@@ -115,6 +122,12 @@ async function createAudioEntry(text, audioUrl, timestamp = Date.now(), voiceMod
   deleteButton.innerHTML = '<i class="fa-solid fa-trash"></i>';
   deleteButton.classList.add("delete-button");
   deleteButton.addEventListener("click", () => {
+    // Remove from audioElements array
+    const index = audioElements.indexOf(audioElement);
+    if (index > -1) {
+      audioElements.splice(index, 1);
+    }
+    
     // If this audio is playing, stop it before removing
     if (currentlyPlayingAudio === audioElement) {
       audioElement.pause();
@@ -129,8 +142,11 @@ async function createAudioEntry(text, audioUrl, timestamp = Date.now(), voiceMod
   audioContainer.appendChild(audioElement);
   audioContainer.appendChild(deleteButton);
   
-  // Add to container
-  audioDiv.insertBefore(audioContainer, audioDiv.firstChild);
+  // Add to container at the bottom
+  audioDiv.appendChild(audioContainer);
+  
+  // Add to audio elements array
+  audioElements.push(audioElement);
   
   // Start playing automatically if requested
   if (autoPlay) {
@@ -141,51 +157,6 @@ async function createAudioEntry(text, audioUrl, timestamp = Date.now(), voiceMod
   }
   
   return audioElement;
-}
-
-// Function to convert text to speech
-async function convertTextToSpeech(text, autoPlay = true) {
-  const messageDiv = document.getElementById("message");
-  messageDiv.textContent = "";
-  
-  if (!text) {
-    messageDiv.textContent = "Please enter text to convert.";
-    return;
-  }
-  
-  const selectedVoice = voiceSelect.value;
-  const selectedModel = modelSelect.value;
-  convertButton.disabled = true;
-  convertButton.textContent = "Converting...";
-  
-  try {
-    const response = await fetch("https://voice.cloud.atemkeng.de/v1/audio/speech", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: selectedVoice,
-        input: text,
-        voice: selectedVoice
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error("Error fetching audio data.");
-    }
-    
-    const audioBlob = await response.blob();
-    const audioUrl = URL.createObjectURL(audioBlob);
-    
-    // Create audio entry with current settings
-    const timestamp = Date.now();
-    const audioElement = await createAudioEntry(text, audioUrl, timestamp, selectedVoice, selectedModel, autoPlay);
-  } catch (error) {
-    messageDiv.textContent = "Error converting text to speech.";
-    console.error("Error:", error);
-  } finally {
-    convertButton.disabled = false;
-    convertButton.textContent = "Convert to Speech";
-  }
 }
 
 // Handle convert button click
@@ -199,8 +170,61 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     textInput.value = message.text;
     toggleConvertButton();
     convertTextToSpeech(message.text);
+  } else if (message.action === "convertWebPage" && message.chunks) {
+    handleWebPageConversion(message.chunks, message.totalChunks);
   }
 });
+
+// Function to handle webpage conversion
+async function handleWebPageConversion(chunks, totalChunks) {
+  const messageDiv = document.getElementById("message");
+  messageDiv.textContent = `Converting webpage (0/${totalChunks} chunks)...`;
+  
+  // Process chunks sequentially
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    messageDiv.textContent = `Converting webpage (${i + 1}/${totalChunks} chunks)...`;
+    
+    try {
+      // Convert the chunk
+      const response = await fetch("https://voice.cloud.atemkeng.de/v1/audio/speech", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: voiceSelect.value,
+          input: chunk,
+          voice: voiceSelect.value
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error converting chunk ${i + 1}`);
+      }
+      
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      // Create audio entry with current settings and autoPlay false for all except first chunk
+      await createAudioEntry(
+        chunk,
+        audioUrl,
+        Date.now(),
+        voiceSelect.value,
+        modelSelect.value,
+        i === 0 // Only autoplay the first chunk
+      );
+      
+    } catch (error) {
+      console.error(`Error converting chunk ${i + 1}:`, error);
+      messageDiv.textContent = `Error converting chunk ${i + 1}. Please try again.`;
+    }
+  }
+  
+  messageDiv.textContent = `Webpage conversion complete! ${totalChunks} chunks processed.`;
+  setTimeout(() => {
+    messageDiv.textContent = "";
+  }, 5000);
+}
 
 // Dark mode toggle
 document.getElementById("darkModeToggle").addEventListener("click", () => {
@@ -237,6 +261,88 @@ document.getElementById("openInFloatingWindow").addEventListener("click", () => 
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
+  const urlInput = document.getElementById("pageUrlInput");
+  
+  // Add convert page button handler
+  document.getElementById("convertPageButton").addEventListener("click", async () => {
+    try {
+      let tab;
+      
+      // Check if we have a URL in the input
+      if (urlInput.value) {
+        // Create a new tab with the URL
+        tab = await chrome.tabs.create({ url: urlInput.value, active: false });
+        
+        // Wait for the page to load
+        await new Promise(resolve => {
+          chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
+            if (tabId === tab.id && info.status === 'complete') {
+              chrome.tabs.onUpdated.removeListener(listener);
+              resolve();
+            }
+          });
+        });
+      } else {
+        // Get the active tab if no URL is provided
+        [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      }
+      
+      if (!tab) {
+        throw new Error("No valid tab or URL found");
+      }
+      
+      // Extract text from the webpage
+      const [result] = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: () => {
+          // Get the main content
+          const content = document.body.innerText;
+          // Remove extra whitespace and normalize
+          return content.replace(/\s+/g, ' ').trim();
+        }
+      });
+
+      // Close the tab if we created it from URL input
+      if (urlInput.value) {
+        chrome.tabs.remove(tab.id);
+      }
+
+      if (result && result.result) {
+        const pageText = result.result;
+        // Split text into chunks of approximately 500 words
+        const words = pageText.split(' ');
+        const chunks = [];
+        let currentChunk = [];
+        let currentSize = 0;
+
+        for (const word of words) {
+          if (currentSize + word.length > 200) {
+            chunks.push(currentChunk.join(' '));
+            currentChunk = [word];
+            currentSize = word.length;
+          } else {
+            currentChunk.push(word);
+            currentSize += word.length + 1; // +1 for space
+          }
+        }
+
+        if (currentChunk.length > 0) {
+          chunks.push(currentChunk.join(' '));
+        }
+
+        // Process the chunks
+        handleWebPageConversion(chunks, chunks.length);
+        
+        // Clear the URL input after successful conversion
+        urlInput.value = '';
+      }
+    } catch (error) {
+      console.error('Error converting page:', error);
+      const messageDiv = document.getElementById("message");
+      messageDiv.textContent = "Error converting page. Please check the URL and try again.";
+    }
+  });
+
   // Check for stored selected text and auto-convert flag when popup opens
   chrome.storage.local.get(['selectedText', 'autoConvert', 'timestamp'], async function(result) {
     if (result.selectedText) {
@@ -306,4 +412,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Initial population of voices based on the default model selection
   populateVoices();
+  
+  // Clear audioElements array when popup is loaded
+  audioElements = [];
 });

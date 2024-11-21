@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Read Me",
-  "version": "1.2",
+  "version": "1.3.0",
   "description": "A Chrome extension that converts text to speech using an external API.",
   "permissions": ["storage", "contextMenus", "activeTab", "scripting", "tabs"],
   "host_permissions": [
     "http://45.94.111.107/*",
-    "https://voice.cloud.atemkeng.de/*"
+    "https://voice.cloud.atemkeng.de/*",
+    "<all_urls>"
   ],
   "action": {
     "default_popup": "popup.html",

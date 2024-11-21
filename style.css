@@ -108,6 +108,40 @@ select {
     background-size: 16px;
 }
 
+/* URL input field styles */
+.url-input-container {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+#pageUrlInput {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+#pageUrlInput:focus {
+  outline: none;
+  border-color: #2196f3;
+}
+
+.dark-mode #pageUrlInput {
+  background-color: #333;
+  border-color: #555;
+  color: #fff;
+}
+
+.dark-mode #pageUrlInput:focus {
+  border-color: #64b5f6;
+}
+
+.dark-mode #pageUrlInput::placeholder {
+  color: #888;
+}
+
 /* Convert button styling */
 #convertButton {
     width: 100%;
@@ -130,6 +164,44 @@ select {
 #convertButton:disabled {
     background-color: #ccc;
     cursor: not-allowed;
+}
+
+/* Action buttons styling */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0;
+  padding: 0 10px;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.action-button:hover {
+  background-color: #1976d2;
+}
+
+.action-button i {
+  font-size: 16px;
+}
+
+.dark-mode .action-button {
+  background-color: #64b5f6;
+}
+
+.dark-mode .action-button:hover {
+  background-color: #42a5f5;
 }
 
 /* Message and audio container styling */

@@ -2,13 +2,81 @@
 let floatingWindowId = null;
 let floatingTabId = null;
 
-// Create context menu item
+// Create context menu items
 chrome.runtime.onInstalled.addListener(() => {
+  // Menu item for selected text
   chrome.contextMenus.create({
     id: "convertTextToSpeech",
     title: "readMe - Read this text",
     contexts: ["selection"]
   });
+});
+
+// Function to extract readable text from webpage
+function extractReadableText() {
+  // Get the main content
+  const content = document.body.innerText;
+  
+  // Remove extra whitespace and normalize
+  return content.replace(/\s+/g, ' ').trim();
+}
+
+// Function to chunk text
+function chunkText(text, chunkSize = 1000) {
+  const words = text.split(' ');
+  const chunks = [];
+  let currentChunk = [];
+  let currentSize = 0;
+
+  for (const word of words) {
+    if (currentSize + word.length > chunkSize) {
+      chunks.push(currentChunk.join(' '));
+      currentChunk = [word];
+      currentSize = word.length;
+    } else {
+      currentChunk.push(word);
+      currentSize += word.length + 1; // +1 for space
+    }
+  }
+
+  if (currentChunk.length > 0) {
+    chunks.push(currentChunk.join(' '));
+  }
+
+  return chunks;
+}
+
+// Listen for context menu clicks
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId === "convertTextToSpeech" && info.selectionText) {
+    // Store the selected text
+    await chrome.storage.local.set({ 
+      selectedText: info.selectionText,
+      autoConvert: true,
+      timestamp: Date.now()
+    });
+
+    if (floatingWindowId) {
+      try {
+        // Try to focus existing window
+        await chrome.windows.update(floatingWindowId, { focused: true });
+        // Notify the popup to convert new text
+        if (floatingTabId) {
+          await chrome.tabs.sendMessage(floatingTabId, {
+            action: "newTextSelected",
+            text: info.selectionText
+          });
+        }
+      } catch (error) {
+        // If window doesn't exist anymore, create new one
+        floatingWindowId = null;
+        floatingTabId = null;
+        createFloatingWindow();
+      }
+    } else {
+      createFloatingWindow();
+    }
+  }
 });
 
 // Listen for window creation to store floating window ID
@@ -28,41 +96,6 @@ chrome.windows.onRemoved.addListener((windowId) => {
   if (windowId === floatingWindowId) {
     floatingWindowId = null;
     floatingTabId = null;
-  }
-});
-
-// Handle context menu click
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId === "convertTextToSpeech") {
-    const selectedText = info.selectionText;
-    
-    // Store the selected text
-    await chrome.storage.local.set({ 
-      selectedText,
-      autoConvert: true,
-      timestamp: Date.now()
-    });
-
-    if (floatingWindowId) {
-      try {
-        // Try to focus existing window
-        await chrome.windows.update(floatingWindowId, { focused: true });
-        // Notify the popup to convert new text
-        if (floatingTabId) {
-          await chrome.tabs.sendMessage(floatingTabId, {
-            action: "newTextSelected",
-            text: selectedText
-          });
-        }
-      } catch (error) {
-        // If window doesn't exist anymore, create new one
-        floatingWindowId = null;
-        floatingTabId = null;
-        createFloatingWindow();
-      }
-    } else {
-      createFloatingWindow();
-    }
   }
 });
 
