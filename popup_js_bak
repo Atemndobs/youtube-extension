@@ -1,0 +1,183 @@
+// Prefill the input field with the current tab's URL
+function prefillCurrentTabUrl() {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const currentTabUrl = tabs[0].url;
+    document.getElementById("appartUrl").value = currentTabUrl;
+  });
+}
+
+// Extract platform, address, and ID from URL
+function extractDetailsFromUrl(url) {
+  const urlObj = new URL(url);
+  const platform = urlObj.hostname.replace("www.", ""); // Platform name from domain
+
+  // Extract address and ID from the URL path
+  const pathSegments = urlObj.pathname.split("/").filter(Boolean);
+  const address = pathSegments.slice(2, -1).join("/"); // Assuming 'flat/<address>/<id>'
+  const id = pathSegments[pathSegments.length - 1];
+
+  return { platform, address, id };
+}
+
+// Function to get Font Awesome icon class based on vehicle type
+function getVehicleIconClass(vehicleType) {
+  // Normalize the vehicle type to lower case
+  const normalizedType = vehicleType.toLowerCase();
+
+  console.log(`Extracting icon class for vehicle type "${vehicleType}"`);
+
+  // Define the mapping of vehicle types to Font Awesome icons
+  const vehicleIcons = {
+    bus: "fa-bus",
+    train: "fa-train",
+    tram: "fa-tram",
+    bicycle: "fa-bicycle",
+    walking: "fa-walking",
+    // Add more mappings as needed
+  };
+
+  // Return the corresponding icon or a default icon if the type is unknown
+  return vehicleIcons[normalizedType] || "fa-question-circle"; // Default icon
+}
+
+// Function to send the apartment URL and extracted details to the backend webhook
+function sendToWebhook(apartmentUrl) {
+  const { platform, address, id } = extractDetailsFromUrl(apartmentUrl);
+  const targetAddress = document.getElementById("targetAddress").value; // Get the target address
+
+  // Prepare the request payload
+  const requestBody = {
+    appart_url: apartmentUrl,
+    platform: platform,
+    address: address,
+    id: id,
+    target_address: targetAddress,
+    urls: [apartmentUrl],
+    include_raw_html: false,
+    bypass_cache: false,
+    extract_blocks: true,
+    word_count_threshold: 5,
+    extraction_strategy: "NoExtractionStrategy",
+    extraction_strategy_args: {},
+    chunking_strategy: "RegexChunking",
+    chunking_strategy_args: {},
+    css_selector: "",
+    screenshot: false,
+    user_agent: "",
+    verbose: true,
+  };
+
+  // Send the request to the webhook endpoint
+  fetch("https://fastapi.curator.atemkeng.eu/api/v1/apartment/get_distance", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(requestBody),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (
+        data &&
+        data.driving &&
+        data.walking &&
+        data.bicycling &&
+        data.transit
+      ) {
+        // Ensuring distances and durations are rounded up to the next minute
+        let resultsHtml = `
+    <p style="font-size: 20px; margin-left: 5px;">
+    <i class="fa-solid fa-car"></i> 
+    ${data.driving.distance ? data.driving.distance.toFixed(2) : "N/A"} km, ${
+          data.driving.duration ? Math.ceil(data.driving.duration) : "N/A"
+        } min
+    </p>
+    <p style="font-size: 20px; margin-left: 5px;">
+    <i class="fa-solid fa-person-walking-arrow-right"></i> 
+    ${data.walking.distance ? data.walking.distance.toFixed(2) : "N/A"} km, ${
+          data.walking.duration ? Math.ceil(data.walking.duration) : "N/A"
+        } min
+    </p>
+    <p style="font-size: 20px; margin-left: 5px;">
+    <i class="fa-solid fa-person-biking"></i> 
+    ${
+      data.bicycling.distance ? data.bicycling.distance.toFixed(2) : "N/A"
+    } km, ${
+          data.bicycling.duration ? Math.ceil(data.bicycling.duration) : "N/A"
+        } min
+    </p>
+`;
+
+        if (
+          data.transit.transit_details &&
+          data.transit.transit_details.length > 0
+        ) {
+          data.transit.transit_details.forEach((detail) => {
+            const vehicleIconClass = getVehicleIconClass(detail.vehicle_type);
+
+            resultsHtml += `
+            <p style="font-size: 20px; margin-left: 5px;">
+                <i class="fas ${vehicleIconClass}"></i> 
+                ${
+                  detail.vehicle_type.charAt(0).toUpperCase() +
+                  detail.vehicle_type.slice(1)
+                } Line ${detail.line_nr},
+                ${
+                  data.transit.distance
+                    ? data.transit.distance.toFixed(2)
+                    : "N/A"
+                } km, 
+                ${
+                  data.transit.duration
+                    ? Math.ceil(data.transit.duration)
+                    : "N/A"
+                } min
+            </p>
+        `;
+          });
+        }
+
+        document.getElementById("distanceResults").innerHTML = resultsHtml;
+        document.getElementById("successMessage").style.display = "block";
+        document.getElementById("errorMessage").style.display = "none";
+      } else {
+        document.getElementById("errorMessage").textContent =
+          "Invalid response from server!";
+        document.getElementById("errorMessage").style.display = "block";
+      }
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+      document.getElementById("errorMessage").textContent = "Network error!";
+      document.getElementById("errorMessage").style.display = "block";
+      document.getElementById("successMessage").style.display = "none";
+    });
+}
+
+// Event listener for the "Get Distance" button
+document.getElementById("getDistanceButton").addEventListener("click", () => {
+  const apartmentUrl = document.getElementById("appartUrl").value.trim();
+  if (apartmentUrl) {
+    sendToWebhook(apartmentUrl);
+  } else {
+    document.getElementById("errorMessage").textContent =
+      "Please enter a valid URL.";
+    document.getElementById("errorMessage").style.display = "block";
+  }
+});
+
+// Event listener for the "toggle mode" button
+document.getElementById("toggleModeButton").addEventListener("click", () => {
+  document.body.classList.toggle("dark-mode");
+  const modeIcon = document.getElementById("modeIcon");
+  if (document.body.classList.contains("dark-mode")) {
+    modeIcon.classList.remove("fa-moon");
+    modeIcon.classList.add("fa-sun");
+  } else {
+    modeIcon.classList.remove("fa-sun");
+    modeIcon.classList.add("fa-moon");
+  }
+});
+
+// Prefill the current tab URL on load
+document.addEventListener("DOMContentLoaded", prefillCurrentTabUrl);

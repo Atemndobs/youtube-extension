@@ -1,134 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Player</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        /* Base styles */
-        body {
-            width: 300px;
-            padding: 10px;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            background-color: #fff; /* Light mode background */
-            color: #000; /* Light mode text color */
-            position: relative;
-        }
-        .input-container {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        input[type="text"] {
-            flex: 1;
-            padding: 5px;
-            background-color: #f0f0f0; /* Light input background */
-            color: #000; /* Light input text color */
-            border: 1px solid #ccc; /* Light input border */
-            border-radius: 4px; /* Rounded corners */
-        }
-        input[type="text"]::placeholder {
-            color: #888; /* Light placeholder text */
-        }
-        .button-container {
-            display: flex;
-            gap: 5px; /* Space between buttons */
-        }
-        button {
-            flex: 1;
-            padding: 5px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px; /* Space between icon and text */
-            background-color: #f0f0f0; /* Light button background */
-            color: #000; /* Light button text color */
-            border: 1px solid #ccc; /* Light button border */
-            border-radius: 4px; /* Rounded corners */
-        }
-        button:hover {
-            background-color: #e0e0e0; /* Slightly darker background on hover */
-        }
-
-        /* Dark mode styles */
-        .dark-mode {
-            background-color: #1b1b1b; /* Dark mode background */
-            color: #eee; /* Dark mode text color */
-        }
-        .dark-mode input[type="text"] {
-            background-color: #000; /* Dark input background */
-            color: #eee; /* Dark input text color */
-            border: 1px solid #000; /* Dark input border */
-        }
-        .dark-mode input[type="text"]::placeholder {
-            color: #888; /* Dark placeholder text */
-        }
-        .dark-mode button {
-            background-color: #555; /* Dark button background */
-            color: #eee; /* Dark button text color */
-            border: 1px solid #000; /* Dark button border */
-        }
-        .dark-mode button:hover {
-            background-color: #666; /* Slightly lighter background on hover */
-        }
-
-        /* Toggle button */
-        .toggle-mode {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 18px;
-            color: #000; /* Light mode icon color */
-        }
-        .dark-mode .toggle-mode {
-            color: #eee; /* Dark mode icon color */
-        }
-        .toggle-mode.sun {
-            color: #121211; /* Sun color */
-        }
-        .toggle-mode.moon {
-            color: #3498db; /* Moon color */
-        }
-
-        /* Notification message */
-        #successMessage {
-            display: none;
-            padding: 10px;
-            border-radius: 4px;
-            background-color: #4caf50; /* Green background */
-            color: white;
-            font-weight: bold;
-            text-align: center;
-        }
-        .dark-mode #successMessage {
-            background-color: #45a049; /* Darker green background for dark mode */
-        }
-    </style>
+    <title>Apartment Finder</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span title="Cancel" id="closeSettings" class="close">&times;</span>
+            <h3>Default Settings</h3>
+            <div class="input-container">
+                <input type="text" id="defaultTargetAddress" placeholder="Enter default target address">
+                <button title="Save Settings">
+                    <i id="saveSettingsButton" class="fa-regular fa-floppy-disk"></i>
+                </button>
+            </div>
+
+            <!-- <div class="input-container">
+                <label type="text">Show/Hide the Add to List <i class="fa-solid fa-plus"></i> Button</label>
+                <button title="Show/Hide List Button">
+                    <input title="Show/Hide List Button" type="checkbox" id="showAddToListButton"
+                        class="styled-checkbox">
+                </button>
+            </div> -->
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <!-- Load Addresses Modal -->
+    <!-- <div id="addressModal" class="modal">
+    <div id="addressModalContent" class="modal-content">
+        <span title="Close" id="closeAddressModal" class="close-address-modal">&times;</span>
+        <h3>Addresses found on this page</h3>
+        <ul id="addressList" class="address-list">
+            <li class="address-item" data-address="Address 1, Street 123, City">Address 1, Street 123, City <i class="fa-solid fa-map-pin"></i></li>
+            <li class="address-item" data-address="Landstreed 2, Street 456, City">Landstreed 2, Street 456, Citpluss Deutschland <i class="fa-solid fa-map-pin"></i></li>
+            <li class="address-item" data-address="Gorecasting 3,Street 789, City ">AGorecasting 3,Street 789, City 789, City <i class="fa-solid fa-map-pin"></i></li>
+            <li class="address-item" data-address="Marmaldia 3, Street 789, City ">Address Marmaldia 3, Street 789, City <i class="fa-solid fa-map-pin"></i></li>
+            <li class="address-item" data-address="homeplace 9,  Street 789, City ">homeplace 9,  Street 789, City City <i class="fa-solid fa-map-pin"></i></li>
+        </ul>
+    </div>
+</div> -->
+
+    <!-- Load Addresses Modal -->
+    <div id="addressModal" class="modal">
+        <div class="modal-content">
+            <span title="Close" id="closeAddressModal" class="close">&times;</span>
+            <h3>Addresses found on this page</h3>
+            <div id="addressError" class="error-message"></div> 
+            <ul id="addressList"></ul>
+        </div>
+    </div>
+
+
+    <div class="flex-container">
+        <span class="toggle-mode-span" id="toggleModeButton" title="Toggle Dark Mode">
+            <i class="fas fa-moon"></i>
+        </span>
+
+        <!-- <span class="toggle-mode-span" id="load_addresses" title="Load all addresses on this page">
+            <i class="fa-solid fa-location-crosshairs"></i>
+        </span> -->
+        <span class="toggle-mode-span" id="settings" title="Settings">
+            <i class="fa-solid fa-gear" id="settings"></i>
+        </span>
+    </div>
     <div class="input-container">
-        <input id="youtubeUrl" type="text" placeholder="Enter YouTube URL">
-        <button class="toggle-mode" id="toggleModeButton">
-            <i class="fas fa-sun"></i>
+        <input id="appartUrl" type="text" placeholder="Enter Apartment URL">
+        <button title="view start location on maps" id="locationButtonApartment">
+            <i class="fa-solid fa-location-dot"></i>
+        </button>
+    </div>
+    <div class="input-container">
+        <input title="locationInput" id="targetAddress" type="text" value="">
+        <button title="view destination on maps" id="locationButtonTarget">
+            <i class="fa-solid fa-flag-checkered"></i>
         </button>
     </div>
     <div class="button-container">
-        <button id="addToWatchlistButton">
-            <i class="icon fas fa-plus"></i>
-            Add to Watchlist
+        <button id="getDistanceButton" title="How to get from location to destination">
+            <i class="fa-solid fa-map-location-dot" title="How far ist it from Location to destination?"></i>
+            Get Distance
         </button>
-        <button id="viewWatchlistButton">
-            <i class="icon fas fa-eye"></i>
-            View Watchlist
-        </button>
+        <span class="toggle-mode-span" id="addToList">
+            <i class="fa-solid fa-plus"></i>
+        </span>
     </div>
-    <div id="successMessage">Added to Watchlist</div>
-
+    <div id="successMessage">Distance Retrieved!</div>
+    <div id="errorMessage"></div>
+    <div id="distanceResults"></div> <!-- To display distance results -->
     <script src="popup.js"></script>
 </body>
+
 </html>

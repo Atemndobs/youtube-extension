@@ -1,29 +1,29 @@
 {
   "manifest_version": 3,
-  "name": "YouTube Watchlist",
-  "version": "1.0",
-  "description": "Easily create and manage a watchlist of your favorite YouTube videos. Save videos directly from a URL and view them anytime.",
+  "name": "How Far",
+  "version": "0.0.2",
+  "description": "Calculates distances from selected locations to a default target location, like a workplace or nearby restaurant.",
   "permissions": [
-    "activeTab",
     "tabs",
     "storage"
   ],
   "host_permissions": [
-    "https://viewer.atemkeng.de/*"
+    "https://fastapi.curator.atemkeng.eu/*"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "YouTube Watchlist"
+    "default_title": "How Far"
   },
   "icons": {
-    "16": "fav_ivon_lightmode@2x.png",
-    "48": "fav_ivon_lightmode@2x.png",
-    "128": "fav_ivon_lightmode@2x.png"
+    "16": "icon/icons8-user-location-48.png",
+    "48": "icon/icons8-user-location-48.png",
+    "128": "icon/icons8-user-location-96.png"
+    
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://viewer.atemkeng.de/"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src *;"
   }
 }
