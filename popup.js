@@ -1,645 +1,860 @@
-// Prefill the input field with the current tab's URL
-function prefillCurrentTabUrl() {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const currentTabUrl = tabs[0].url;
-    document.getElementById("appartUrl").value = currentTabUrl;
+// Global variables
+let currentAudio = null;
+let audioElements = [];
+let audioQueue = [];
+let isProcessingQueue = false;
+let savedInputText = null;
+
+// DOM Elements
+let convertButton;
+let textInput;
+let closeButton;
+let voiceSelect;
+let modelSelect;
+let darkModeToggle;
+let messageDiv;
+let speakButton;
+let selectionStatus;
+let urlInput;
+let convertPageButton;
+let openInFloatingWindow;
+
+// Model to voices mapping
+const modelToVoices = {
+  "voice-en-us": [
+    "voice-en-us-amy-low",
+    "voice-en-gb-alan-low",
+    "voice-en-us-ryan-low",
+    "voice-en-us-kathleen-low"
+  ],
+  "voice-en-gb": ["voice-en-gb-alan-low"],
+  "voice-de": [
+    "voice-de-thorsten-low",
+    "voice-de-kerstin-low"
+  ],
+  "voice-es": [
+    "voice-es-carlfm-x-low"
+  ],
+  "voice-fr": [
+    "voice-fr-gilles-low",
+    "voice-fr-mls_1840-low",
+    "voice-fr-siwis-low",
+    "voice-fr-siwis-medium"
+  ],
+  "voice-it": ["voice-it-paola-medium"]
+};
+
+// Function to populate voices based on selected model
+function populateVoices() {
+  if (!modelSelect || !voiceSelect) return;
+  
+  const selectedModel = modelSelect.value;
+  const voices = modelToVoices[selectedModel] || [];
+
+  // Clear previous options
+  voiceSelect.innerHTML = "";
+
+  // Populate the voice dropdown
+  voices.forEach(voice => {
+    const option = document.createElement("option");
+    option.value = voice;
+    option.textContent = voice.replace(/-/g, " ");
+    voiceSelect.appendChild(option);
   });
 }
-// Prefill the current tab URL on load
-document.addEventListener("DOMContentLoaded", prefillCurrentTabUrl);
 
-function extractDetailsFromUrl(input) {
-  try {
-    let platform = "unknown";
-    let address = "";
-    let id = "";
-
-    // Check if input is a valid URL
-    if (input.startsWith("http://") || input.startsWith("https://")) {
-      const urlObj = new URL(input); // Check if valid URL
-      platform = urlObj.hostname.replace("www.", ""); // Platform name from domain
-
-      console.log({
-        platform,
-      });
-
-      // Extract details based on platform
-      if (platform === "homegate.ch") {
-        ({ address, id } = extractHomegateDetails(urlObj));
-      } else if (platform === "flatfox.ch") {
-        ({ address, id } = extractFlatfoxDetails(urlObj));
-      }
-      // If platform is unrecognized
-      else {
-        document.getElementById("errorMessage").style.display = "block";
-        return { error: "Platform not supported" };
-      }
-    } else {
-      // Treat it as a manually entered address
-      address = input;
-    }
-
-    // Hide error message on successful extraction
-    document.getElementById("errorMessage").style.display = "none";
-    console.log({
-      platform,
-      address,
-      id,
-    });
-    return { platform, address, id };
-  } catch (error) {
-    // Handle invalid input
-    document.getElementById("errorMessage").style.display = "block";
-    return { error: "Invalid input" };
-  }
-}
-
-// Method to extract address and ID from Homegate URL
-function extractHomegateDetails(urlObj) {
-  const pathSegments = urlObj.pathname.split("/").filter(Boolean);
-  let address = "";
-  let id = "";
-
-  if (pathSegments.length >= 2) {
-    address = pathSegments.slice(1, -1).join("/"); // Extract address if possible
-    id = pathSegments[pathSegments.length - 1]; // Extract ID
-  }
-
-  return { address, id };
-}
-
-// Method to extract address and ID from Flatfox URL
-function extractFlatfoxDetails(urlObj) {
-  const pathSegments = urlObj.pathname.split("/").filter(Boolean);
-  let address = "";
-  let id = "";
-
-  if (pathSegments.length >= 3) {
-    address = pathSegments.slice(1, -1).join("/"); // Assuming structure 'flat/<address>/<id>'
-    id = pathSegments[pathSegments.length - 1]; // Extract ID
-  }
-
-  return { address, id };
-}
-
-// Function to get Font Awesome icon class based on vehicle type
-function getVehicleIconClass(vehicleType) {
-  // Normalize the vehicle type to lowercase for consistent matching
-  const normalizedType = vehicleType.toLowerCase();
-
-  console.log(`Extracting icon class for vehicle type "${vehicleType}"`);
-
-  // Define the mapping of specific vehicle types to Font Awesome icons
-  const vehicleIcons = {
-    bus: "fa-bus",
-    tram: "fa-solid fa-train-tram",
-    subway: "fa-solid fa-train-subway",
-    bicycle: "fa-bicycle",
-    walking: "fa-walking",
-    // Add more mappings as needed
-  };
-
-  // Check if "train" is part of the vehicle type to apply a general train icon
-  if (normalizedType.includes("train")) {
-    return "fa-solid fa-train";
-  }
-
-  // Return the specific icon if found, or a default icon if the type is unknown
-  return vehicleIcons[normalizedType] || "fa-question-circle";
-}
-
-// Helper function to format duration
-function formatDuration(durationInMinutes) {
-  if (durationInMinutes < 60) {
-    return `${Math.ceil(durationInMinutes)} min`;
-  } else if (durationInMinutes < 1440) {
-    // Less than 24 hours
-    const hours = Math.floor(durationInMinutes / 60);
-    const minutes = Math.ceil(durationInMinutes % 60);
-    return `${hours} hr ${minutes > 0 ? `${minutes} min` : ""}`;
-  } else {
-    // 24 hours or more
-    const days = Math.floor(durationInMinutes / 1440);
-    const hours = Math.floor((durationInMinutes % 1440) / 60);
-    const minutes = Math.ceil(durationInMinutes % 60);
-    return `${days} day${days > 1 ? "s" : ""} ${hours} hr${
-      hours > 0 ? ` ${minutes} min` : ""
-    }`;
-  }
-}
-
-// Function to send the apartment URL and extracted details to the backend webhook
-function sendToWebhook(apartmentUrl) {
-  const { platform, address, id } = extractDetailsFromUrl(apartmentUrl);
-  const targetAddress = document.getElementById("targetAddress").value; // Get the target address
-
-  // Prepare the request payload
-  const requestBody = {
-    appart_url: apartmentUrl,
-    platform: platform,
-    address: address,
-    id: id,
-    target_address: targetAddress,
-    urls: [apartmentUrl],
-    include_raw_html: false,
-    bypass_cache: false,
-    extract_blocks: true,
-    word_count_threshold: 5,
-    extraction_strategy: "NoExtractionStrategy",
-    extraction_strategy_args: {},
-    chunking_strategy: "RegexChunking",
-    chunking_strategy_args: {},
-    css_selector: "",
-    screenshot: false,
-    user_agent: "",
-    verbose: true,
-  };
-
-  // CSS styles for table without borders
-  const tableStyles = `
-    <style>
-        .distance-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .distance-table td {
-            padding: 8px;
-            font-size: 20px;
-            vertical-align: middle;
-        }
-        .distance-table i {
-            margin-right: 5px;
-        }
-    </style>
-`;
-
-  // Injecting the CSS styles into the HTML document
-  document.head.insertAdjacentHTML("beforeend", tableStyles);
-
-  fetch("https://fastapi.curator.atemkeng.eu/api/v1/apartment/get_distance", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestBody),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (
-        data &&
-        data.driving &&
-        data.walking &&
-        data.bicycling &&
-        data.transit
-      ) {
-        // Ensuring distances and durations are rounded up to the next minute
-        let resultsHtml = `
-      <table class="distance-table">
-          <tr>
-              <td><i class="fa-solid fa-car"></i></td>
-              <td>Driving</td>
-              <td>${
-                data.driving.distance ? data.driving.distance.toFixed(2) : "N/A"
-              } km</td>
-              <td>${
-                data.driving.duration
-                  ? formatDuration(data.driving.duration)
-                  : "N/A"
-              }</td>
-          </tr>
-          <tr>
-              <td><i class="fa-solid fa-person-walking-arrow-right"></i></td>
-              <td>Walking</td>
-              <td>${
-                data.walking.distance ? data.walking.distance.toFixed(2) : "N/A"
-              } km</td>
-              <td>${
-                data.walking.duration
-                  ? formatDuration(data.walking.duration)
-                  : "N/A"
-              }</td>
-          </tr>
-          <tr>
-              <td><i class="fa-solid fa-person-biking"></i></td>
-              <td>Bicycling</td>
-              <td>${
-                data.bicycling.distance
-                  ? data.bicycling.distance.toFixed(2)
-                  : "N/A"
-              } km</td>
-              <td>${
-                data.bicycling.duration
-                  ? formatDuration(data.bicycling.duration)
-                  : "N/A"
-              }</td>
-          </tr>
-  `;
-
-        // Add transit details if available
-        if (
-          data.transit.transit_details &&
-          data.transit.transit_details.length > 0
-        ) {
-          data.transit.transit_details.forEach((detail) => {
-            const vehicleIconClass = getVehicleIconClass(detail.vehicle_type);
-
-            resultsHtml += `
-          <tr>
-            <td><i class="fas ${vehicleIconClass}"></i></td>
-            <td>${
-              detail.vehicle_type.charAt(0).toUpperCase() +
-              detail.vehicle_type.slice(1)
-            } ${detail.line_nr}, ${detail.num_stops} Stops</td>
-            <td>${
-              data.transit.distance ? data.transit.distance.toFixed(2) : "N/A"
-            } km</td>
-            <td>
-              ${
-                data.transit.duration
-                  ? formatDuration(data.transit.duration)
-                  : "N/A"
-              }
-              <i class="fa-solid fa-circle-info info-icon"></i>
-              <span class="tooltip-text" style="display: none;"> check ${detail.vehicle_type} info below.</span>
-            </td>
-          </tr>
-        `;
-          });
-        }
-
-        resultsHtml += `</table>`;
-        // Add the tooltip container HTML to the results
-        resultsHtml += `<div id="tooltipContainer" class="tooltip-container">Transit   information is based on current time and may vary.</div>`;
-        document.getElementById("distanceResults").innerHTML = resultsHtml;
-
-        // Get the tooltip container after it has been added to the DOM
-        const tooltipContainer = document.getElementById("tooltipContainer");
-
-        // Make sure the tooltip container exists before trying to access its style
-        if (tooltipContainer) {
-          tooltipContainer.style.display = "none"; // Show the tooltip immediately (if needed)
-        }
-
-        // Add event listener to toggle tooltip on icon click
-        document.querySelectorAll(".info-icon").forEach((icon) => {
-          icon.addEventListener("click", function () {
-            // Toggle the tooltip's visibility
-            if (tooltipContainer) {
-              tooltipContainer.style.display =
-                tooltipContainer.style.display === "none" ? "block" : "none";
-            }
-          });
-        });
-
-        document.getElementById("successMessage").style.display = "block";
-        document.getElementById("errorMessage").style.display = "none";
-        document.getElementById("getDistanceButton").style.display = "none";
-      } else {
-        document.getElementById("errorMessage").textContent =
-          "Invalid response from server!";
-        document.getElementById("errorMessage").style.display = "block";
-      }
-    })
-    .catch((error) => {
-      console.error("Error:", error);
-      document.getElementById("errorMessage").textContent = "Network error!";
-      document.getElementById("errorMessage").style.display = "block";
-      document.getElementById("successMessage").style.display = "none";
-    });
-}
-
-// Event listener for the "Get Distance" button
-document.getElementById("getDistanceButton").addEventListener("click", () => {
-  const apartmentUrl = document.getElementById("appartUrl").value.trim();
-  if (apartmentUrl) {
-    sendToWebhook(apartmentUrl);
-  } else {
-    document.getElementById("errorMessage").textContent =
-      "Please enter a valid URL.";
-    document.getElementById("errorMessage").style.display = "block";
-  }
-});
-
-// Function to set the mode based on saved preference
-function loadMode() {
-  const isDarkMode = localStorage.getItem("darkMode") === "true";
+// Function to initialize dark mode
+function initializeDarkMode() {
+  if (!darkModeToggle) return;
+  
+  const isDarkMode = localStorage.getItem("darkMode") === "enabled";
   if (isDarkMode) {
     document.body.classList.add("dark-mode");
-  } else {
-    document.body.classList.remove("dark-mode");
   }
+
+  darkModeToggle.addEventListener("click", () => {
+    document.body.classList.toggle("dark-mode");
+    localStorage.setItem(
+      "darkMode",
+      document.body.classList.contains("dark-mode") ? "enabled" : "disabled"
+    );
+  });
 }
 
-// Event listener for the "toggle mode" button
-document.getElementById("toggleModeButton").addEventListener("click", () => {
-  document.body.classList.toggle("dark-mode");
-  
-  // Save the current mode to localStorage
-  const isDarkMode = document.body.classList.contains("dark-mode");
-  localStorage.setItem("darkMode", isDarkMode);
-  
-  const modeIcon = document.getElementById("modeIcon");
-  // Optionally, you can change the modeIcon here based on isDarkMode
-});
-
-// Load the mode when the extension opens
-loadMode();
-
-
-// Function to open location in Google Maps
-function openInGoogleMaps(location) {
-  const encodedLocation = encodeURIComponent(location);
-  window.open(
-    `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`,
-    "_blank"
-  );
-}
-
-// Event listener for the apartment location button
-document
-  .getElementById("locationButtonApartment")
-  .addEventListener("click", () => {
-    const apartmentUrl = document.getElementById("appartUrl").value.trim();
-    if (apartmentUrl) {
-      const { address } = extractDetailsFromUrl(apartmentUrl);
-      openInGoogleMaps(address);
-    } else {
-      alert("Please enter a valid apartment URL.");
+// Function to check text selection
+async function checkTextSelection() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) return false;
+    
+    // Check for restricted URLs
+    const restrictedUrls = ['chrome://', 'chrome-extension://', 'about:', 'file://', 'edge://', 'about:blank'];
+    if (restrictedUrls.some(url => tab.url.startsWith(url))) {
+      console.log('Cannot access restricted URL:', tab.url);
+      return false;
     }
-  });
 
-// Event listener for the target location button
-document
-  .getElementById("locationButtonTarget")
-  .addEventListener("click", () => {
-    const targetAddress = document.getElementById("targetAddress").value;
-    openInGoogleMaps(targetAddress);
-  });
-
-
-// Event listener for the "Add to List" button
-document.getElementById("addToList").addEventListener("click", () => {
-  const apartmentUrl = document.getElementById("appartUrl").value.trim();
-  if (apartmentUrl) {
-    addToListWebhook(apartmentUrl);
-  } else {
-    document.getElementById("errorMessage").textContent =
-      "Please enter a valid URL.";
-    document.getElementById("errorMessage").style.display = "block";
-  }
-});
-
-// Function to send the apartment URL and extracted details to the n8n webhook
-function addToListWebhook(apartmentUrl) {
-  const { platform, address, id } = extractDetailsFromUrl(apartmentUrl);
-  const targetAddress = document.getElementById("targetAddress").value;
-
-  // Prepare the request payload
-  const requestBody = {
-    appart_url: apartmentUrl,
-    platform: platform,
-    address: address,
-    id: id,
-    target_address: targetAddress,
-    urls: [apartmentUrl],
-    include_raw_html: false,
-    bypass_cache: false,
-    extract_blocks: true,
-    word_count_threshold: 5,
-    extraction_strategy: "NoExtractionStrategy",
-    extraction_strategy_args: {},
-    chunking_strategy: "RegexChunking",
-    chunking_strategy_args: {},
-    css_selector: "",
-    screenshot: false,
-    user_agent: "",
-    verbose: true,
-  };
-
-  // const webhookUrl = "https://n8n.atemkeng.de/webhook/5fb74a0f-a6a9-402d-aa5f-6271e874a769";
-  const webhookUrl =
-    "https://fastapi.curator.atemkeng.eu/api/v1/apartment/add_to_list";
-
-  // Send the POST request to the n8n webhook
-  // Send the POST request to the n8n webhook
-  fetch(webhookUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestBody),
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
-      }
-      return response.json();
-    })
-    .then((data) => {
-      console.log("Data sent to webhook:", data);
-      document.getElementById("successMessage").textContent = "Added to List!";
-      document.getElementById("successMessage").style.display = "block";
-      document.getElementById("errorMessage").style.display = "none";
-    })
-    .catch((error) => {
-      console.error("Error:", error);
-      document.getElementById("errorMessage").textContent =
-        "Faild to add to List!";
-      document.getElementById("errorMessage").style.display = "block";
-      document.getElementById("successMessage").style.display = "none";
+    const [{ result }] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: () => window.getSelection().toString().trim()
     });
+
+    return result.length > 0;
+  } catch (error) {
+    console.error('Error checking text selection:', error);
+    return false;
+  }
 }
 
+// Function to get selected text
+async function getSelectedText() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) return '';
+    
+    // Check for restricted URLs
+    const restrictedUrls = ['chrome://', 'chrome-extension://', 'about:', 'file://', 'edge://', 'about:blank'];
+    if (restrictedUrls.some(url => tab.url.startsWith(url))) {
+      console.log('Cannot access restricted URL:', tab.url);
+      return '';
+    }
 
-// Load the setting when the popup is opened
-chrome.storage.sync.get('showAddToListButton', (data) => {
-  const showAddToListButtonCheckbox = document.getElementById('showAddToListButton');
-  if (data.showAddToListButton !== undefined) {
-    showAddToListButtonCheckbox.checked = data.showAddToListButton;
+    const [{ result }] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: () => window.getSelection().toString().trim()
+    });
+
+    return result;
+  } catch (error) {
+    console.error('Error getting selected text:', error);
+    return '';
   }
-});
+}
 
-// Apply the setting to show/hide the "Add to List" button
-chrome.storage.sync.get('showAddToListButton', (data) => {
-  const addToListButton = document.getElementById('addToList');
-  if (data.showAddToListButton) {
-    addToListButton.style.display = 'inline-block';
-  } else {
-    addToListButton.style.display = 'none';
+// Function to convert text to speech
+async function convertTextToSpeech(text) {
+  // Validate input text
+  if (!text || typeof text !== 'string' || !text.trim()) {
+    throw new Error('Please enter valid text to convert');
   }
-});
 
-// // Event listener for saving settings
-// document.getElementById('saveSettingsButton').addEventListener('click', () => {
-//   const showAddToListButton = document.getElementById('showAddToListButton').checked;
+  // Get selected voice and model
+  const selectedModel = modelSelect?.value || 'voice-en-us-amy-low';
+  const selectedVoice = voiceSelect?.value || 'voice-en-us-amy-low';
+  
+  // Validate that the voice is available for the selected model
+  const availableVoices = modelToVoices[selectedModel] || [];
+  if (!availableVoices.includes(selectedVoice)) {
+    throw new Error('Selected voice is not available for this model');
+  }
+  
+  try {
+    const response = await fetch('https://voice.cloud.atemkeng.de/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: selectedVoice,
+        input: text.trim(),
+        voice: selectedVoice
+      })
+    });
 
-//   // Save the setting
-//   chrome.storage.sync.set({ showAddToListButton }, () => {
-//     console.log('Settings saved.');
-//   });
-//       // Update the add to list button directly after saving
-//       const addToListButton = document.getElementById('addToList');
-//       addToListButton.style.display = showAddToListButton? 'inline-block' : 'none';
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('API Error:', errorData);
+      throw new Error(`Server error: ${response.status}`);
+    }
 
+    const blob = await response.blob();
+    if (blob.size === 0) {
+      throw new Error('Received empty audio data');
+    }
 
-//   // Close the settings modal after saving
-//   document.getElementById('settingsModal').style.display = 'none';
-// });
+    const audioUrl = URL.createObjectURL(blob);
+    
+    // Create and add audio entry
+    const { element, audio, text: audioText } = createAudioEntry(text, audioUrl);
+    const audioContainer = document.getElementById('audioContainer');
+    if (audioContainer) {
+      audioContainer.prepend(element);
+      addToAudioQueue({ element, audio, text: audioText });
+    }
+    
+  } catch (error) {
+    console.error('Error converting text to speech:', error);
+    if (selectionStatus) {
+      selectionStatus.textContent = 'Error converting text to speech';
+      selectionStatus.classList.add('text-red-500');
+    }
+    throw error; // Re-throw to handle in the calling function
+  }
+}
 
+// Function to process audio queue
+async function processAudioQueue() {
+  if (isProcessingQueue || audioQueue.length === 0) return;
+  
+  isProcessingQueue = true;
+  const currentEntry = audioQueue[0];
+  
+  try {
+    // Stop any currently playing audio
+    if (currentAudio && currentAudio !== currentEntry.audio) {
+      currentAudio.pause();
+      currentAudio = null;
+    }
+    
+    currentAudio = currentEntry.audio;
+    
+    // Set up the ended event handler
+    const onEnded = () => {
+      audioQueue.shift(); // Remove the finished audio
+      isProcessingQueue = false;
+      currentEntry.audio.removeEventListener('ended', onEnded);
+      processAudioQueue(); // Process next in queue
+    };
+    
+    currentEntry.audio.addEventListener('ended', onEnded);
+    await currentEntry.audio.play();
+    
+    // Update UI
+    updatePlayerUI(currentEntry);
+  } catch (error) {
+    console.error('Error playing audio:', error);
+    if (messageDiv) {
+      messageDiv.textContent = 'Error playing audio. Please try again.';
+    }
+    isProcessingQueue = false;
+    audioQueue.shift();
+    processAudioQueue();
+  }
+}
 
+// Function to add to audio queue
+function addToAudioQueue(audioEntry) {
+  audioQueue.push(audioEntry);
+  if (audioQueue.length === 1) { // If this is the first entry, start processing
+    processAudioQueue();
+  }
+}
 
-// Save the default target address setting
-document.getElementById("saveSettingsButton").addEventListener("click", () => {
-  const defaultTargetAddress = document.getElementById(
-    "defaultTargetAddress"
-  ).value;
-  chrome.storage.sync.set({ defaultTargetAddress }, () => {
-    // Update the target address input field directly after saving
-    const targetAddressInput = document.getElementById("targetAddress");
-    targetAddressInput.value = defaultTargetAddress;
+// Function to update player UI
+function updatePlayerUI(audioEntry) {
+  const playButton = document.querySelector('.play-button');
+  const progressRing = document.querySelector('.progress-ring-circle');
+  const currentTimeDisplay = document.getElementById('currentTime');
+  const durationDisplay = document.getElementById('duration');
+  const currentChunkDisplay = document.getElementById('currentChunk');
+  const totalChunksDisplay = document.getElementById('totalChunks');
+  const currentAudioTextDisplay = document.getElementById('currentAudioText');
 
-    // Close the settings modal
-    document.getElementById("settingsModal").style.display = "none";
+  // Always update total chunks
+  if (totalChunksDisplay) {
+    totalChunksDisplay.textContent = audioQueue.length.toString();
+  }
+  
+  if (!audioEntry || !audioEntry.audio) {
+    // Reset UI when no audio is playing
+    if (playButton) {
+      playButton.innerHTML = '<i class="fa-solid fa-play"></i>';
+      playButton.classList.remove('playing');
+    }
+    if (progressRing) {
+      progressRing.style.strokeDashoffset = 163.36; // Full circle
+    }
+    if (currentTimeDisplay) currentTimeDisplay.textContent = '0:00';
+    if (durationDisplay) durationDisplay.textContent = '0:00';
+    if (currentChunkDisplay) currentChunkDisplay.textContent = '0';
+    if (currentAudioTextDisplay) currentAudioTextDisplay.textContent = '';
+    // Clear input field when nothing is playing
+    if (textInput) {
+      textInput.value = '';
+    }
+    return;
+  }
+
+  const { audio, text } = audioEntry;
+  
+  // Update play/pause button
+  if (playButton) {
+    playButton.innerHTML = audio.paused ? 
+      '<i class="fa-solid fa-play"></i>' : 
+      '<i class="fa-solid fa-pause"></i>';
+    playButton.classList.toggle('playing', !audio.paused);
+  }
+
+  // Update progress ring
+  if (progressRing && !isNaN(audio.duration)) {
+    const progress = audio.currentTime / audio.duration;
+    const circumference = 163.36; // 2 * π * radius (26)
+    const offset = circumference - (progress * circumference);
+    progressRing.style.strokeDashoffset = offset;
+  }
+
+  // Update time displays
+  if (currentTimeDisplay && !isNaN(audio.currentTime)) {
+    currentTimeDisplay.textContent = formatTime(audio.currentTime);
+  }
+  if (durationDisplay && !isNaN(audio.duration)) {
+    durationDisplay.textContent = formatTime(audio.duration);
+  }
+
+  // Update chunk information - show currently playing chunk
+  const currentIndex = audioQueue.findIndex(entry => entry.audio === audio) + 1;
+  if (currentChunkDisplay) {
+    currentChunkDisplay.textContent = currentIndex.toString();
+  }
+
+  // Update text preview
+  if (currentAudioTextDisplay) {
+    currentAudioTextDisplay.textContent = text.length > 100 ? 
+      text.substring(0, 100) + '...' : 
+      text;
+  }
+
+  // Update input field with current chunk text
+  if (textInput && !audio.paused) {
+    textInput.value = text;
+  }
+}
+
+// Function to create audio entry with improved UI elements
+function createAudioEntry(text, audioUrl) {
+  const audio = new Audio(audioUrl);
+  
+  // Create container element
+  const element = document.createElement('div');
+  element.className = 'audio-entry';
+  
+  // Create text preview
+  const textPreview = document.createElement('div');
+  textPreview.className = 'text-preview';
+  textPreview.textContent = text.length > 100 ? text.substring(0, 100) + '...' : text;
+  
+  // Create audio element wrapper
+  const audioWrapper = document.createElement('div');
+  audioWrapper.className = 'audio-wrapper';
+  
+  // Create custom controls
+  const controls = document.createElement('div');
+  controls.className = 'custom-controls';
+  
+  // Create play/pause button
+  const playPauseBtn = document.createElement('button');
+  playPauseBtn.className = 'play-pause-btn';
+  playPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+  
+  // Add click handler for play/pause
+  playPauseBtn.addEventListener('click', () => {
+    if (audio.paused) {
+      // Pause any currently playing audio
+      if (currentAudio && currentAudio !== audio) {
+        currentAudio.pause();
+        // Save the current input text if it's different from the audio text
+        if (textInput && textInput.value !== text) {
+          savedInputText = textInput.value;
+        }
+      }
+      audio.play();
+      currentAudio = audio;
+      // Update input with current chunk text
+      if (textInput) {
+        textInput.value = text;
+      }
+    } else {
+      audio.pause();
+      // Restore saved input text if it exists
+      if (textInput && savedInputText !== null) {
+        textInput.value = savedInputText;
+        savedInputText = null;
+      }
+    }
+    updatePlayerUI({ element, audio, text });
   });
-});
-
-// Load the default target address when the extension loads
-document.addEventListener("DOMContentLoaded", () => {
-  chrome.storage.sync.get("defaultTargetAddress", (data) => {
-    const targetAddressInput = document.getElementById("targetAddress");
-    if (data.defaultTargetAddress) {
-      targetAddressInput.value = data.defaultTargetAddress;
+  
+  // Add timeupdate listener for progress
+  audio.addEventListener('timeupdate', () => {
+    if (audio === currentAudio) {
+      updatePlayerUI({ element, audio, text });
     }
   });
+  
+  // Add ended listener
+  audio.addEventListener('ended', () => {
+    playPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+    if (audio === currentAudio) {
+      // Find next audio in queue
+      const currentIndex = audioQueue.findIndex(entry => entry.audio === audio);
+      if (currentIndex < audioQueue.length - 1) {
+        const nextEntry = audioQueue[currentIndex + 1];
+        currentAudio = nextEntry.audio;
+        currentAudio.play();
+        // Update input with next chunk text
+        if (textInput) {
+          textInput.value = nextEntry.text;
+        }
+        updatePlayerUI(nextEntry);
+      } else {
+        currentAudio = null;
+        // Restore saved input text if it exists
+        if (textInput && savedInputText !== null) {
+          textInput.value = savedInputText;
+          savedInputText = null;
+        }
+        updatePlayerUI(null);
+      }
+    }
+  });
+  
+  controls.appendChild(playPauseBtn);
+  audioWrapper.appendChild(controls);
+  element.appendChild(textPreview);
+  element.appendChild(audioWrapper);
+  
+  return { element, audio, text };
+}
+
+// Function to format time
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Function to validate URL for content script injection
+function isValidUrl(url) {
+  const restrictedPatterns = [
+    'chrome://',
+    'chrome-extension://',
+    'chrome-search://',
+    'chrome-devtools://',
+    'about:',
+    'edge://',
+    'data:',
+    'view-source:'
+  ];
+  return url && !restrictedPatterns.some(pattern => url.startsWith(pattern));
+}
+
+// Function to handle webpage text conversion
+async function handleWebPageConversion(chunks, totalChunks) {
+  if (!chunks || chunks.length === 0) return;
+  
+  if (!messageDiv) {
+    messageDiv = document.getElementById("message");
+  }
+  
+  if (messageDiv) {
+    messageDiv.textContent = `Converting page: 0/${totalChunks} chunks`;
+  }
+  
+  for (let i = 0; i < chunks.length; i++) {
+    try {
+      await convertTextToSpeech(chunks[i]);
+      if (messageDiv) {
+        messageDiv.textContent = `Converting page: ${i + 1}/${totalChunks} chunks`;
+      }
+    } catch (error) {
+      console.error(`Error converting chunk ${i}:`, error);
+      continue;
+    }
+  }
+  
+  if (messageDiv) {
+    messageDiv.textContent = "Page conversion completed!";
+    setTimeout(() => {
+      if (messageDiv) {
+        messageDiv.textContent = "";
+      }
+    }, 3000);
+  }
+}
+
+// Function to update chunk display
+function updateChunkDisplay(current, total) {
+  const currentChunkDisplay = document.getElementById('currentChunk');
+  const totalChunksDisplay = document.getElementById('totalChunks');
+  
+  if (currentChunkDisplay) {
+    currentChunkDisplay.textContent = current.toString();
+  }
+  if (totalChunksDisplay) {
+    totalChunksDisplay.textContent = total.toString();
+  }
+}
+
+// Initialize popup
+document.addEventListener('DOMContentLoaded', async () => {
+  // Initialize DOM elements
+  convertButton = document.getElementById("convertButton");
+  textInput = document.getElementById("textInput");
+  closeButton = document.getElementById("closeButton");
+  voiceSelect = document.getElementById("voiceSelect");
+  modelSelect = document.getElementById("modelSelect");
+  darkModeToggle = document.getElementById("darkModeToggle");
+  messageDiv = document.getElementById("message");
+  speakButton = document.getElementById("speakButton");
+  selectionStatus = document.getElementById("selectionStatus");
+  urlInput = document.getElementById("pageUrlInput");
+  convertPageButton = document.getElementById("convertPageButton");
+  openInFloatingWindow = document.getElementById("openInFloatingWindow");
+
+  // Initialize player controls
+  const playPauseButton = document.getElementById('playPauseButton');
+  const prevButton = document.getElementById('prevAudio');
+  const nextButton = document.getElementById('nextAudio');
+  
+  // Play/Pause button click handler
+  if (playPauseButton) {
+    playPauseButton.addEventListener('click', () => {
+      if (!currentAudio) {
+        // If no audio is playing, start playing the first one in queue
+        if (audioQueue.length > 0) {
+          const firstAudio = audioQueue[0];
+          firstAudio.audio.play();
+          currentAudio = firstAudio.audio;
+          updatePlayerUI(firstAudio);
+        }
+      } else {
+        if (currentAudio.paused) {
+          currentAudio.play();
+        } else {
+          currentAudio.pause();
+        }
+        // Find current audio entry and update UI
+        const currentEntry = audioQueue.find(entry => entry.audio === currentAudio);
+        if (currentEntry) {
+          updatePlayerUI(currentEntry);
+        }
+      }
+    });
+  }
+
+  // Previous button click handler
+  if (prevButton) {
+    prevButton.addEventListener('click', () => {
+      if (currentAudio && audioQueue.length > 0) {
+        const currentIndex = audioQueue.findIndex(entry => entry.audio === currentAudio);
+        if (currentIndex > 0) {
+          currentAudio.pause();
+          const prevEntry = audioQueue[currentIndex - 1];
+          currentAudio = prevEntry.audio;
+          currentAudio.play();
+          updatePlayerUI(prevEntry);
+        }
+      }
+    });
+  }
+
+  // Next button click handler
+  if (nextButton) {
+    nextButton.addEventListener('click', () => {
+      if (currentAudio && audioQueue.length > 0) {
+        const currentIndex = audioQueue.findIndex(entry => entry.audio === currentAudio);
+        if (currentIndex < audioQueue.length - 1) {
+          currentAudio.pause();
+          const nextEntry = audioQueue[currentIndex + 1];
+          currentAudio = nextEntry.audio;
+          currentAudio.play();
+          updatePlayerUI(nextEntry);
+        }
+      }
+    });
+  }
+
+  // Initialize dark mode
+  initializeDarkMode();
+  
+  // Initialize voices
+  if (modelSelect) {
+    modelSelect.addEventListener("change", populateVoices);
+    populateVoices(); // Initial population
+  }
+
+  // Initialize text input handlers
+  if (textInput) {
+    textInput.addEventListener("input", () => {
+      if (convertButton) {
+        convertButton.disabled = !textInput.value.trim();
+      }
+    });
+  }
+
+  // Initialize convert button
+  if (convertButton) {
+    convertButton.addEventListener("click", async () => {
+      if (textInput?.value) {
+        const text = textInput.value;
+        try {
+          // Update button to show processing
+          convertButton.disabled = true;
+          convertButton.textContent = 'Processing text...';
+
+          // Process text directly in chunks
+          const words = text.split(' ');
+          const chunks = [];
+          let currentChunk = [];
+          let currentSize = 0;
+          const chunkSize = 1000;
+
+          for (const word of words) {
+            if (currentSize + word.length > chunkSize) {
+              chunks.push(currentChunk.join(' '));
+              currentChunk = [word];
+              currentSize = word.length;
+            } else {
+              currentChunk.push(word);
+              currentSize += word.length + 1; // +1 for space
+            }
+          }
+
+          if (currentChunk.length > 0) {
+            chunks.push(currentChunk.join(' '));
+          }
+
+          console.log('Created chunks:', chunks.length);
+          
+          // Reset audio queue
+          audioQueue = [];
+          
+          // Clear audio container
+          const audioContainer = document.getElementById('audioContainer');
+          if (audioContainer) {
+            audioContainer.innerHTML = '';
+          }
+
+          // Update UI to show initial state
+          updatePlayerUI(null);
+
+          // Process chunks
+          for (let i = 0; i < chunks.length; i++) {
+            convertButton.textContent = `Converting chunk ${i + 1}/${chunks.length}...`;
+            try {
+              await convertTextToSpeech(chunks[i]);
+            } catch (error) {
+              console.error(`Error converting chunk ${i + 1}:`, error);
+              convertButton.textContent = `Error in chunk ${i + 1}: ${error.message}`;
+              await new Promise(resolve => setTimeout(resolve, 2000)); // Show error for 2 seconds
+            }
+          }
+
+          // Reset button state with success message
+          convertButton.textContent = 'Conversion Complete!';
+          setTimeout(() => {
+            convertButton.disabled = false;
+            convertButton.textContent = 'Convert to Speech';
+          }, 2000);
+
+        } catch (error) {
+          console.error('Error processing text:', error);
+          convertButton.textContent = `Error: ${error.message || 'Unknown error'}`;
+          setTimeout(() => {
+            convertButton.disabled = false;
+            convertButton.textContent = 'Convert to Speech';
+          }, 2000);
+        }
+      }
+    });
+  }
+
+  // Initialize close button
+  if (closeButton) {
+    closeButton.addEventListener("click", () => {
+      // Clean up audio resources
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+      }
+      audioQueue = [];
+      isProcessingQueue = false;
+      window.close();
+    });
+  }
+
+  // Check for stored selected text
+  chrome.storage.local.get(['selectedText', 'autoConvert'], async function(result) {
+    if (result.selectedText && textInput) {
+      textInput.value = result.selectedText;
+      if (convertButton) {
+        convertButton.disabled = false;
+      }
+      
+      if (result.autoConvert) {
+        await convertTextToSpeech(result.selectedText);
+      }
+      
+      // Clear the stored data
+      chrome.storage.local.remove(['selectedText', 'autoConvert']);
+    }
+  });
+
+  // Initialize page URL conversion
+  if (convertPageButton) {
+    convertPageButton.addEventListener("click", async () => {
+      const messageDiv = document.getElementById("message");
+      
+      try {
+        let tab;
+        let url = urlInput?.value?.trim();
+        
+        // Validate URL if provided
+        if (url) {
+          try {
+            url = new URL(url).href;
+          } catch (e) {
+            throw new Error("Invalid URL format");
+          }
+          
+          if (!isValidUrl(url)) {
+            throw new Error("Cannot access this type of URL");
+          }
+          
+          // Create a new tab with the URL
+          tab = await chrome.tabs.create({ url, active: false });
+          
+          // Wait for the page to load
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error("Page load timeout")), 30000);
+            
+            chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
+              if (tabId === tab.id && info.status === 'complete') {
+                chrome.tabs.onUpdated.removeListener(listener);
+                clearTimeout(timeout);
+                resolve();
+              }
+            });
+          });
+        } else {
+          // Get the active tab if no URL is provided
+          [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+          if (!tab?.url || !isValidUrl(tab.url)) {
+            throw new Error("Cannot access this page type");
+          }
+        }
+        
+        if (!tab?.id) {
+          throw new Error("No valid tab found");
+        }
+        
+        // Extract text from the webpage
+        const [result] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            const walker = document.createTreeWalker(
+              document.body,
+              NodeFilter.SHOW_TEXT,
+              {
+                acceptNode: function(node) {
+                  if (!node.parentElement || node.parentElement.offsetParent === null) {
+                    return NodeFilter.FILTER_REJECT;
+                  }
+                  if (['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(node.parentElement.tagName)) {
+                    return NodeFilter.FILTER_REJECT;
+                  }
+                  return node.textContent.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+                }
+              }
+            );
+
+            const paragraphs = [];
+            let currentParagraph = [];
+            let node;
+
+            while (node = walker.nextNode()) {
+              const text = node.textContent.trim();
+              if (text) {
+                const isEndOfParagraph = 
+                  ['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI'].includes(node.parentElement.tagName) ||
+                  (node.parentElement.nextElementSibling?.style.display === 'block') ||
+                  text.endsWith('.') || text.endsWith('!') || text.endsWith('?');
+
+                currentParagraph.push(text);
+
+                if (isEndOfParagraph && currentParagraph.length > 0) {
+                  paragraphs.push(currentParagraph.join(' '));
+                  currentParagraph = [];
+                }
+              }
+            }
+
+            if (currentParagraph.length > 0) {
+              paragraphs.push(currentParagraph.join(' '));
+            }
+
+            return paragraphs
+              .filter(p => p.trim().split(/\s+/).length > 3)
+              .map(p => p.replace(/\s+/g, ' ').trim());
+          }
+        });
+
+        // Close the tab if we created it from URL input
+        if (url) {
+          chrome.tabs.remove(tab.id);
+        }
+
+        if (!result?.result || result.result.length === 0) {
+          throw new Error("No readable text found on the page");
+        }
+
+        // Process the text chunks
+        await handleWebPageConversion(result.result, result.result.length);
+        
+        // Clear the URL input after successful conversion
+        if (urlInput) {
+          urlInput.value = '';
+        }
+        
+      } catch (error) {
+        console.error('Error converting page:', error);
+        if (messageDiv) {
+          messageDiv.textContent = `Error: ${error.message || "Failed to convert page"}. Please try again.`;
+        }
+      }
+    });
+  }
+
+  // Handle messages from background script
+  const messageListener = (message, sender, sendResponse) => {
+    if (message.action === "newTextSelected" && message.text && textInput) {
+      textInput.value = message.text;
+      if (convertButton) {
+        convertButton.disabled = false;
+      }
+      convertTextToSpeech(message.text);
+    }
+  };
+  chrome.runtime.onMessage.addListener(messageListener);
+
+  // Open floating window
+  if (openInFloatingWindow) {
+    openInFloatingWindow.addEventListener("click", () => {
+      const width = 480;
+      const height = 780;
+      const left = (window.innerWidth - width) / 2;
+      const top = (window.innerHeight - height) / 2;
+      window.open("popup.html", "PopupWindow", `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes`);
+    });
+  }
+
+  // Clean up on window unload
+  window.addEventListener('unload', () => {
+    // Remove event listeners
+    if (modelSelect) {
+      modelSelect.removeEventListener("change", populateVoices);
+    }
+    if (closeButton) {
+      closeButton.removeEventListener("click", window.close);
+    }
+    chrome.runtime.onMessage.removeListener(messageListener);
+
+    // Clean up audio resources
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio = null;
+    }
+    audioQueue = [];
+    isProcessingQueue = false;
+  });
 });
-
-
-
-
-
-
-
-
-
-// Retrieve and display the current default target address in the modal
-document.getElementById("settings").addEventListener("click", () => {
-  // Open the modal
-  document.getElementById("settingsModal").style.display = "block";
-
-  // Retrieve the current default target address from localStorage
-  const currentDefaultAddress = localStorage.getItem("defaultTargetAddress") || "";
-
-  // Set the value of the input field to the current default target address
-  document.getElementById("defaultTargetAddress").value = currentDefaultAddress;
-});
-
-// Save the default target address when clicking the save button
-document.getElementById("saveSettingsButton").addEventListener("click", () => {
-  const newDefaultAddress = document.getElementById("defaultTargetAddress").value;
-
-  // Save the new default target address to localStorage
-  localStorage.setItem("defaultTargetAddress", newDefaultAddress);
-
-  // Optionally update the main target address input if you want it to reflect immediately
-  document.getElementById("targetAddress").value = newDefaultAddress;
-
-  // Close the modal
-  document.getElementById("settingsModal").style.display = "none";
-});
-
-// Close the modal when clicking the close button
-document.getElementById("closeSettings").addEventListener("click", () => {
-  document.getElementById("settingsModal").style.display = "none";
-});
-
-
-
-
-
-
-
-// document.addEventListener('DOMContentLoaded', () => {
-//   const loadAddressesButton = document.getElementById('load_addresses');
-//   const addressModal = document.getElementById('addressModal');
-//   const closeAddressModal = document.getElementById('closeAddressModal');
-//   const addressList = document.getElementById('addressList');
-//   const startAddressInput = document.getElementById('appartUrl');
-//   const addressError = document.getElementById('addressError');
-
-//   // Open the modal when the load addresses button is clicked
-//   loadAddressesButton.addEventListener('click', async () => {
-//       // Clear any previous error message
-//       addressError.textContent = "";
-//       const currentUrl = startAddressInput.value;
-
-//       if (currentUrl) {
-//           const addresses = await fetchAddresses(currentUrl);
-//           if (addresses.length > 0) {
-//               displayAddresses(addresses);
-//           } else {
-//               addressError.textContent = "No addresses found.";
-//           }
-//           addressModal.style.display = 'block';
-//       } else {
-//           addressError.textContent = "Please enter a URL to load addresses.";
-//           addressModal.style.display = 'block';
-//       }
-//   });
-
-//   // Close the modal
-//   closeAddressModal.addEventListener('click', () => {
-//       addressModal.style.display = 'none';
-//   });
-
-//   // Handle clicking an address item
-//   addressList.addEventListener('click', (event) => {
-//       if (event.target.classList.contains('address-item')) {
-//           const selectedAddress = event.target.getAttribute('data-address');
-//           startAddressInput.value = selectedAddress;
-//           addressModal.style.display = 'none';
-//       }
-//   });
-
-//   // Close the modal if clicked outside of the content area
-//   window.addEventListener('click', (event) => {
-//       if (event.target === addressModal) {
-//           addressModal.style.display = 'none';
-//       }
-//   });
-
-//   // Function to fetch addresses from the API
-//   async function fetchAddresses(currentUrl) {
-//       try {
-//           const response = await fetch("https://fastapi.curator.atemkeng.eu/api/v1/apartment/get_addresses", {
-//               method: "POST",
-//               headers: {
-//                   "Content-Type": "application/json"
-//               },
-//               body: JSON.stringify({ urls: [currentUrl] })
-//           });
-
-//           if (!response.ok) {
-//               throw new Error("Failed to fetch addresses.");
-//           }
-
-//           const data = await response.json();
-//           return data.addresses || []; // Adjust based on the actual structure of API response
-//       } catch (error) {
-//           console.error("Error fetching addresses:", error);
-//           addressError.textContent = "Could not load addresses. Please try again.";
-//           return [];
-//       }
-//   }
-
-//   // Function to display addresses in the modal
-//   function displayAddresses(addresses) {
-//       addressList.innerHTML = ""; // Clear existing list
-//       addresses.forEach((address) => {
-//           const listItem = document.createElement("li");
-//           listItem.classList.add("address-item");
-//           listItem.setAttribute("data-address", address);
-//           listItem.innerHTML = `${address} <i class="fa-solid fa-map-pin"></i>`;
-//           addressList.appendChild(listItem);
-//       });
-//   }
-// });
